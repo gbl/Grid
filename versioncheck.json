@@ -1,0 +1,10 @@
+{
+  "homepage": "https://minecraft.curseforge.com/projects/grid",
+  "promos": {
+  "1.11.2-recommended": "1.11.2-forge13.20.0.2231-1.0",
+  "1.12-recommended": "1.12-forge14.21.1.2387-1.0",
+  "1.12.1-recommended": "1.12-forge14.21.1.2387-1.0",
+  "1.12.2-recommended": "1.12-forge14.21.1.2387-1.0"
+  }
+}
+
