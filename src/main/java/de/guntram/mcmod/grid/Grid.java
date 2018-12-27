@@ -3,7 +3,6 @@ package de.guntram.mcmod.grid;
 import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -19,15 +18,15 @@ import net.minecraft.command.CommandSource;
 import static net.minecraft.command.Commands.argument;
 import static net.minecraft.command.Commands.literal;
 import net.minecraft.util.text.TextComponentString;
-import org.dimdev.rift.listener.CommandAdder;
 import org.dimdev.rift.listener.client.KeyBindingAdder;
 import org.dimdev.rift.listener.client.KeybindHandler;
+import org.dimdev.rift.listener.client.LocalCommandAdder;
 import org.dimdev.riftloader.listener.InitializationListener;
 import static org.lwjgl.glfw.GLFW.*;
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.Mixins;
 
-public class Grid implements InitializationListener, CommandAdder, KeybindHandler, KeyBindingAdder
+public class Grid implements InitializationListener, LocalCommandAdder, KeybindHandler, KeyBindingAdder
 {
     static final String MODID="grid";
     static final String VERSION="@VERSION@";
@@ -46,21 +45,14 @@ public class Grid implements InitializationListener, CommandAdder, KeybindHandle
     
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
-    private CommandDispatcher<CommandSource> dispatcher;
-    
 
     @Override
     public void onInitialization() {
         MixinBootstrap.init();
         Mixins.addConfiguration("mixins.grid.json");
         instance=this;
-        dispatcher=new CommandDispatcher<>();
     }
     
-    public void dispatchLocalCommand(String s) throws CommandSyntaxException {
-        dispatcher.execute(s, null);
-    }
-
     public void renderOverlay(float partialTicks) {
         if (!visible)
             return;
@@ -202,10 +194,7 @@ public class Grid implements InitializationListener, CommandAdder, KeybindHandle
     }
 
     @Override
-    public void registerCommands(CommandDispatcher<CommandSource> cd) {
-        
-        cd=dispatcher;
-        
+    public void registerLocalCommands(CommandDispatcher<CommandSource> cd) {
         cd.register(
             literal("grid")
                 .then(
