@@ -4,8 +4,7 @@
     "refmap": "mixins.grid.refmap.json",
     "minVersion": "0.6",
     "client": [
-        "MixinRenderWorldLast",
-        "MixinKeyBinding"
+        "MixinRenderWorldLast"
     ],
     "injectors": {
         "defaultRequire": 1
