@@ -1,0 +1,14 @@
+{
+    "required": true,
+    "package": "de.guntram.mcmod.grid.mixin",
+    "refmap": "mixins.grid.refmap.json",
+    "minVersion": "0.6",
+    "client": [
+        "MixinLocalCommand",
+        "MixinRenderWorldLast",
+        "MixinKeyBinding"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

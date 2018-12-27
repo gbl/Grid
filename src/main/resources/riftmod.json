@@ -1,0 +1,10 @@
+{
+    "id": "grid",
+    "name": "Grid",
+    "authors": [
+        "Giselbaer"
+    ],
+    "listeners": [
+        "de.guntram.mcmod.grid.Grid"
+    ]
+}
