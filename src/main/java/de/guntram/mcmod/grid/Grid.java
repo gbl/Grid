@@ -50,6 +50,7 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
     public void onInitialization() {
         MixinBootstrap.init();
         Mixins.addConfiguration("mixins.grid.json");
+        Mixins.addConfiguration("mixins.riftpatch-de-guntram.json");
         instance=this;
     }
     
