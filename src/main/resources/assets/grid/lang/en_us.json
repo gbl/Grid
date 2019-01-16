@@ -15,5 +15,7 @@
     "msg.gridpattern": "Grid set to %d X blocks, %d Z blocks.",
     "msg.griddistance": "Grid distance is now %d blocks.",
     "msg.griddistusage": "Grid distance is %d blocks.",
-    "msg.badnumber": "Parameters not recognized as integers."
+    "msg.badnumber": "Parameters not recognized as integers.",
+    "msg.spawnsshown": "Mob spawn locations shown",
+    "msg.spawnshidden": "Mob spawn locations hidden"
 }

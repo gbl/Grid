@@ -17,7 +17,12 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.command.CommandSource;
 import static net.minecraft.command.Commands.argument;
 import static net.minecraft.command.Commands.literal;
+import net.minecraft.entity.EntitySpawnPlacementRegistry;
+import net.minecraft.entity.EntityType;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.EnumLightType;
+import net.minecraft.world.WorldEntitySpawner;
 import org.dimdev.rift.listener.client.KeyBindingAdder;
 import org.dimdev.rift.listener.client.KeybindHandler;
 import org.dimdev.rift.listener.client.LocalCommandAdder;
@@ -40,6 +45,7 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
     private int distance=30;
     private boolean visible=false;
     private boolean isBlocks=true;
+    private boolean showSpawns=false;
 
     KeyBinding showHide, gridHere, gridFixY;
     
@@ -55,7 +61,7 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
     }
     
     public void renderOverlay(float partialTicks) {
-        if (!visible)
+        if (!visible && !showSpawns)
             return;
 
         EntityPlayerSP entityplayer = Minecraft.getInstance().player;
@@ -80,7 +86,6 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         int baseZ=playerZ-playerZShift;
         int sizeX=(distance/gridX)*gridX;
         int sizeZ=(distance/gridZ)*gridZ;
-        float y=((float)(fixY==-1 ? entityplayer.posY : fixY)+0.05f);
 
         thisDumpTime=System.currentTimeMillis();
         dump=false;
@@ -89,22 +94,48 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
 //            lastDumpTime=thisDumpTime;
 //        }
         
-        if (isBlocks) {
-            GlStateManager.lineWidth(3.0f);
-            for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
+        if (visible) {
+            float y=((float)(fixY==-1 ? entityplayer.posY : fixY)+0.05f);
+            if (isBlocks) {
+                GlStateManager.lineWidth(3.0f);
+                for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
+                    for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
+                        line (bufferBuilder, x+0.3f, x+0.7f, y, y, z+0.3f, z+0.3f, 0.0f, 0.5f, 1.0f);
+                        line (bufferBuilder, x+0.7f, x+0.7f, y, y, z+0.3f, z+0.7f, 0.0f, 0.5f, 1.0f);
+                        line (bufferBuilder, x+0.7f, x+0.3f, y, y, z+0.7f, z+0.7f, 0.0f, 0.5f, 1.0f);
+                        line (bufferBuilder, x+0.3f, x+0.3f, y, y, z+0.7f, z+0.3f, 0.0f, 0.5f, 1.0f);
+                    }
+                }
+            } else {
+                for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
+                    line(bufferBuilder, x, x, y, y, baseZ-distance, baseZ+distance, 1.0f, 0.5f, 0.0f);
+                }
                 for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
-                    line (bufferBuilder, x+0.3f, x+0.7f, y, y, z+0.3f, z+0.3f, 0.0f, 0.5f, 1.0f);
-                    line (bufferBuilder, x+0.7f, x+0.7f, y, y, z+0.3f, z+0.7f, 0.0f, 0.5f, 1.0f);
-                    line (bufferBuilder, x+0.7f, x+0.3f, y, y, z+0.7f, z+0.7f, 0.0f, 0.5f, 1.0f);
-                    line (bufferBuilder, x+0.3f, x+0.3f, y, y, z+0.7f, z+0.3f, 0.0f, 0.5f, 1.0f);
+                    line(bufferBuilder, baseX-distance, baseX+distance, y, y, z, z, 1.0f, 0.5f, 0.0f);
                 }
             }
-        } else {
-            for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
-                line(bufferBuilder, x, x, y, y, baseZ-distance, baseZ+distance, 1.0f, 0.5f, 0.0f);
-            }
-            for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
-                line(bufferBuilder, baseX-distance, baseX+distance, y, y, z, z, 1.0f, 0.5f, 0.0f);
+        }
+        
+        if (showSpawns) {
+            int miny=(int)(entityplayer.posY)-16;
+            int maxy=(int)(entityplayer.posY)+2;
+            if (miny<0) { miny=0; }
+            if (maxy>255) { maxy=255; }
+            for (int x=baseX-distance; x<=baseX+distance; x++) {
+                for (int z=baseZ-distance; z<=baseZ+distance; z++) {
+                    for (int y=miny; y<=maxy; y++) {
+                        BlockPos pos=new BlockPos(x, y, z);
+                        int spawnmode;
+                        if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.SpawnPlacementType.ON_GROUND, entityplayer.world, pos, EntityType.COD)) {
+                            if (entityplayer.world.getLightFor(EnumLightType.BLOCK, pos)>=8)
+                                continue;
+                            else if (entityplayer.world.getLightFor(EnumLightType.SKY, pos)>=8)
+                                cross(bufferBuilder, x, y, z, 1.0f, 1.0f, 0.0f );
+                            else
+                                cross(bufferBuilder, x, y, z, 1.0f, 0.0f, 0.0f );
+                        }
+                    }
+                }
             }
         }
         
@@ -126,6 +157,13 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         b.pos(x2+offsetX, y2, z2+offsetZ).color(red, green, blue, 0.0f).endVertex();
     }
     
+    private void cross(BufferBuilder b, int x, int y, int z, float red, float green, float blue) {
+        b.pos(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).endVertex();
+        b.pos(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).endVertex();
+        b.pos(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).endVertex();
+        b.pos(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).endVertex();
+    }
+    
     private void cmdShow(EntityPlayerSP sender) {
         visible = true;
         sender.sendMessage(new TextComponentString(I18n.format("msg.gridshown", (Object[]) null)));
@@ -134,6 +172,16 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
     private void cmdHide(EntityPlayerSP sender) {
         visible = false;
         sender.sendMessage(new TextComponentString(I18n.format("msg.gridhidden", (Object[]) null)));
+    }
+    
+    private void cmdSpawns(EntityPlayerSP sender) {
+        if (showSpawns) {
+            sender.sendMessage(new TextComponentString(I18n.format("msg.spawnshidden")));
+            showSpawns=false;
+        } else {
+            sender.sendMessage(new TextComponentString(I18n.format("msg.spawnsshown")));
+            showSpawns=true;
+        }
     }
     
     private void cmdLines(EntityPlayerSP sender) {
@@ -237,6 +285,12 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
                 .then(
                     literal("chunks").executes(c->{
                         cmdChunks(Minecraft.getInstance().player);
+                        return 1;
+                    })
+                )
+                .then(
+                    literal("spawns").executes(c->{
+                        cmdSpawns(Minecraft.getInstance().player);
                         return 1;
                     })
                 )
