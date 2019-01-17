@@ -45,6 +45,7 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
     private int distance=30;
     private boolean visible=false;
     private boolean isBlocks=true;
+    private boolean isCircles=false;
     private boolean showSpawns=false;
 
     KeyBinding showHide, gridHere, gridFixY;
@@ -89,13 +90,14 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
 
         thisDumpTime=System.currentTimeMillis();
         dump=false;
-//        if (thisDumpTime > lastDumpTime + 50000) {
-//            dump=true;
-//            lastDumpTime=thisDumpTime;
-//        }
+        if (thisDumpTime > lastDumpTime + 50000) {
+            dump=true;
+            lastDumpTime=thisDumpTime;
+        }
         
         if (visible) {
             float y=((float)(fixY==-1 ? entityplayer.posY : fixY)+0.05f);
+            int circRadSquare=(gridX/2)*(gridX/2);
             if (isBlocks) {
                 GlStateManager.lineWidth(3.0f);
                 for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
@@ -104,14 +106,61 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
                         line (bufferBuilder, x+0.7f, x+0.7f, y, y, z+0.3f, z+0.7f, 0.0f, 0.5f, 1.0f);
                         line (bufferBuilder, x+0.7f, x+0.3f, y, y, z+0.7f, z+0.7f, 0.0f, 0.5f, 1.0f);
                         line (bufferBuilder, x+0.3f, x+0.3f, y, y, z+0.7f, z+0.3f, 0.0f, 0.5f, 1.0f);
+                        
+                        if (isCircles) {
+                            int dx=0;
+                            int dz=gridX/2;
+                            for (;;) {
+                                int nextx=dx+1;
+                                int nextz=dz;
+                                int toomuch=(nextx*nextx)+(nextz*nextz)-circRadSquare;
+                                if (nextz>0 && (nextz-1)*(nextz-1)+(nextx*nextx)>circRadSquare-toomuch)
+                                    nextz--;
+                                if (nextz<nextx) {
+                                    circleSegment(bufferBuilder, x, dx, dz, y, z, dz, dx, 0.0f, 0.9f, 0.5f);
+                                    break;
+                                }
+
+                                if (dump) {
+                                    System.out.println("circle line from "+dx+"/"+dz+" to "+nextx+"/"+nextz+
+                                            ", (x/2)^2="+((gridX/2.0)*(gridX/2.0))+
+                                            ", dist is "+(nextx*nextx+nextz*nextz)+
+                                            ", one higher dist is "+(nextx*nextx+((nextz+1)*(nextz+1)))+
+                                            ", one lower dist is "+(nextx*nextx+((nextz-1)*(nextz-1)))
+                                            );
+                                }
+                                circleSegment(bufferBuilder, x, dx, nextx, y, z, dz, nextz, 0.0f, 0.9f, 0.5f);
+                                dx=nextx;
+                                dz=nextz;
+                            }
+                        }
+                        dump=false;
                     }
                 }
             } else {
-                for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
-                    line(bufferBuilder, x, x, y, y, baseZ-distance, baseZ+distance, 1.0f, 0.5f, 0.0f);
-                }
-                for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
-                    line(bufferBuilder, baseX-distance, baseX+distance, y, y, z, z, 1.0f, 0.5f, 0.0f);
+                if (!isCircles) {
+                    for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
+                        line(bufferBuilder, x, x, y, y, baseZ-distance, baseZ+distance, 1.0f, 0.5f, 0.0f);
+                    }
+                    for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
+                        line(bufferBuilder, baseX-distance, baseX+distance, y, y, z, z, 1.0f, 0.5f, 0.0f);
+                    }
+                } else {
+                    for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
+                        for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
+                            float dx=0;
+                            float dz=gridX/2.0f;
+                            for (float nextx=0.1f; nextx<gridX; nextx+=0.1f) {
+                                float nextz=(float)(Math.sqrt(gridX*gridX/4.0-nextx*nextx));
+                                circleSegment(bufferBuilder, x, dx, nextx, y, z, dz, nextz, 0.0f, 0.9f, 0.5f);
+                                dx=nextx;
+                                dz=nextz;
+                                if (nextz<nextx)
+                                    break;
+                            }
+                            dump=false;
+                        }   
+                    }
                 }
             }
         }
@@ -145,6 +194,17 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         GlStateManager.lineWidth(1.0f);
         GlStateManager.enableBlend();
         GlStateManager.enableTexture2D();
+    }
+    
+    private void circleSegment(BufferBuilder b, float xc, float x1, float x2, float y, float zc, float z1, float z2, float red, float green, float blue) {
+        line(b, xc+x1+0.5f, xc+x2+0.5f, y, y, zc+z1+0.5f, zc+z2+0.5f, red, green, blue);
+        line(b, xc-x1+0.5f, xc-x2+0.5f, y, y, zc+z1+0.5f, zc+z2+0.5f, red, green, blue);
+        line(b, xc+x1+0.5f, xc+x2+0.5f, y, y, zc-z1+0.5f, zc-z2+0.5f, red, green, blue);
+        line(b, xc-x1+0.5f, xc-x2+0.5f, y, y, zc-z1+0.5f, zc-z2+0.5f, red, green, blue);
+        line(b, xc+z1+0.5f, xc+z2+0.5f, y, y, zc+x1+0.5f, zc+x2+0.5f, red, green, blue);
+        line(b, xc-z1+0.5f, xc-z2+0.5f, y, y, zc+x1+0.5f, zc+x2+0.5f, red, green, blue);
+        line(b, xc+z1+0.5f, xc+z2+0.5f, y, y, zc-x1+0.5f, zc-x2+0.5f, red, green, blue);
+        line(b, xc-z1+0.5f, xc-z2+0.5f, y, y, zc-x1+0.5f, zc-x2+0.5f, red, green, blue);
     }
     
     private void line(BufferBuilder b, float x1, float x2, float y1, float y2, float z1, float z2, float red, float green, float blue) {
@@ -192,6 +252,16 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
     private void cmdBlocks(EntityPlayerSP sender) {
         visible = true; isBlocks = true;
         sender.sendMessage(new TextComponentString(I18n.format("msg.gridblocks", (Object[]) null)));
+    }
+    
+    private void cmdCircles(EntityPlayerSP sender) {
+        if (isCircles) {
+            isCircles = false;
+            sender.sendMessage(new TextComponentString(I18n.format("msg.gridnomorecircles", (Object[]) null)));
+        } else {
+            isCircles = true;
+            sender.sendMessage(new TextComponentString(I18n.format("msg.gridcircles", (Object[]) null)));
+        }
     }
     
     private void cmdHere(EntityPlayerSP sender) {
@@ -267,6 +337,12 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
                 .then(
                     literal("blocks").executes(c->{
                         cmdBlocks(Minecraft.getInstance().player);
+                        return 1;
+                    })
+                )
+                .then(
+                    literal("circles").executes(c->{
+                        cmdCircles(Minecraft.getInstance().player);
                         return 1;
                     })
                 )

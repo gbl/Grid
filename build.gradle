@@ -6,7 +6,7 @@ buildscript {
         maven { url 'http://repo.spongepowered.org/maven' }
     }   
     dependencies {
-        classpath 'com.github.Chocohead:ForgeGradle:moderniser-SNAPSHOT'
+        classpath 'com.github.Chocohead:ForgeGradle:jitpack-SNAPSHOT'
         classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
     }   
 }
@@ -16,7 +16,7 @@ apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'java'
 
 group = "de.guntram.mcmod.grid"
-version = "1.13-rift1.0.4.77-1.1"
+version = "1.13-rift1.0.4.77-1.2"
 archivesBaseName = "grid"
 
 sourceCompatibility = '1.8'
