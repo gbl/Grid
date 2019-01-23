@@ -1,37 +1,36 @@
 package de.guntram.mcmod.grid;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.command.CommandSource;
-import static net.minecraft.command.Commands.argument;
-import static net.minecraft.command.Commands.literal;
-import net.minecraft.entity.EntitySpawnPlacementRegistry;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.keybinding.FabricKeyBinding;
+import net.fabricmc.fabric.api.client.keybinding.KeyBindingRegistry;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.util.InputUtil;
+import static net.minecraft.server.command.ServerCommandManager.argument;
+import static net.minecraft.server.command.ServerCommandManager.literal;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.sortme.SpawnHelper;
+import net.minecraft.sortme.SpawnRestriction;
+import net.minecraft.text.StringTextComponent;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.EnumLightType;
-import net.minecraft.world.WorldEntitySpawner;
-import org.dimdev.rift.listener.client.KeyBindingAdder;
-import org.dimdev.rift.listener.client.KeybindHandler;
-import org.dimdev.rift.listener.client.LocalCommandAdder;
-import org.dimdev.riftloader.listener.InitializationListener;
+import net.minecraft.world.LightType;
 import static org.lwjgl.glfw.GLFW.*;
-import org.spongepowered.asm.launch.MixinBootstrap;
-import org.spongepowered.asm.mixin.Mixins;
 
-public class Grid implements InitializationListener, LocalCommandAdder, KeybindHandler, KeyBindingAdder
+public class Grid implements ClientModInitializer
 {
     static final String MODID="grid";
     static final String VERSION="@VERSION@";
@@ -43,44 +42,43 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
     private int offsetX=0;
     private int offsetZ=0;
     private int distance=30;
-    private boolean visible=false;
+    private boolean visible=true;
     private boolean isBlocks=true;
     private boolean isCircles=false;
-    private boolean showSpawns=false;
+    private boolean showSpawns=true;
 
-    KeyBinding showHide, gridHere, gridFixY;
+    FabricKeyBinding showHide, gridHere, gridFixY;
     
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
 
     @Override
-    public void onInitialization() {
-        MixinBootstrap.init();
-        Mixins.addConfiguration("mixins.grid.json");
-        Mixins.addConfiguration("mixins.riftpatch-de-guntram.json");
+    public void onInitializeClient() {
         instance=this;
+        setKeyBindings();
+        registerLocalCommands(LocalCommandManager.getDispatcher());
     }
     
     public void renderOverlay(float partialTicks) {
         if (!visible && !showSpawns)
             return;
 
-        EntityPlayerSP entityplayer = Minecraft.getInstance().player;
-        double cameraX = entityplayer.lastTickPosX + (entityplayer.posX - entityplayer.lastTickPosX) * (double)partialTicks;
-        double cameraY = entityplayer.lastTickPosY + (entityplayer.posY - entityplayer.lastTickPosY) * (double)partialTicks;
-        double cameraZ = entityplayer.lastTickPosZ + (entityplayer.posZ - entityplayer.lastTickPosZ) * (double)partialTicks;        
+        ClientPlayerEntity entityplayer = MinecraftClient.getInstance().player;
+        double cameraX = entityplayer.prevRenderX + (entityplayer.x - entityplayer.prevRenderX) * (double)partialTicks;
+        double cameraY = entityplayer.prevRenderY + (entityplayer.y - entityplayer.prevRenderY) * (double)partialTicks;
+        double cameraZ = entityplayer.prevRenderZ + (entityplayer.z - entityplayer.prevRenderZ) * (double)partialTicks;        
 
-        GlStateManager.disableTexture2D();
+        GlStateManager.disableTexture();
         GlStateManager.disableBlend();
         GlStateManager.lineWidth(1.0f);
 
         Tessellator tessellator=Tessellator.getInstance();
-        BufferBuilder bufferBuilder = tessellator.getBuffer();
-        bufferBuilder.setTranslation(-cameraX, -cameraY, -cameraZ);
-        bufferBuilder.begin(3, DefaultVertexFormats.POSITION_COLOR);
+        BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+        bufferBuilder.setOffset(-cameraX, -cameraY, -cameraZ);
+        bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
         
-        int playerX=(int) Math.floor(entityplayer.posX);
-        int playerZ=(int) Math.floor(entityplayer.posZ);
+        int playerX=(int) Math.floor(entityplayer.x);
+        int playerZ=(int) Math.floor(entityplayer.z);
         int playerXShift=Math.floorMod(playerX, gridX);
         int playerZShift=Math.floorMod(playerZ, gridZ);
         int baseX=playerX-playerXShift;
@@ -96,7 +94,7 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         }
         
         if (visible) {
-            float y=((float)(fixY==-1 ? entityplayer.posY : fixY)+0.05f);
+            float y=((float)(fixY==-1 ? entityplayer.y : fixY)+0.05f);
             int circRadSquare=(gridX/2)*(gridX/2);
             if (isBlocks) {
                 GlStateManager.lineWidth(3.0f);
@@ -166,8 +164,8 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         }
         
         if (showSpawns) {
-            int miny=(int)(entityplayer.posY)-16;
-            int maxy=(int)(entityplayer.posY)+2;
+            int miny=(int)(entityplayer.y)-16;
+            int maxy=(int)(entityplayer.y)+2;
             if (miny<0) { miny=0; }
             if (maxy>255) { maxy=255; }
             for (int x=baseX-distance; x<=baseX+distance; x++) {
@@ -175,10 +173,10 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
                     for (int y=miny; y<=maxy; y++) {
                         BlockPos pos=new BlockPos(x, y, z);
                         int spawnmode;
-                        if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.SpawnPlacementType.ON_GROUND, entityplayer.world, pos, EntityType.COD)) {
-                            if (entityplayer.world.getLightFor(EnumLightType.BLOCK, pos)>=8)
+                        if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, entityplayer.world, pos, EntityType.COD)) {
+                            if (entityplayer.world.getLightLevel(LightType.BLOCK_LIGHT, pos)>=8)
                                 continue;
-                            else if (entityplayer.world.getLightFor(EnumLightType.SKY, pos)>=8)
+                            else if (entityplayer.world.getLightLevel(LightType.SKY_LIGHT, pos)>=8)
                                 cross(bufferBuilder, x, y, z, 1.0f, 1.0f, 0.0f );
                             else
                                 cross(bufferBuilder, x, y, z, 1.0f, 0.0f, 0.0f );
@@ -189,11 +187,11 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         }
         
         tessellator.draw();
-        bufferBuilder.setTranslation(0, 0, 0);
+        bufferBuilder.setOffset(0, 0, 0);
         
         GlStateManager.lineWidth(1.0f);
         GlStateManager.enableBlend();
-        GlStateManager.enableTexture2D();
+        GlStateManager.enableTexture();
     }
     
     private void circleSegment(BufferBuilder b, float xc, float x1, float x2, float y, float zc, float z1, float z2, float red, float green, float blue) {
@@ -211,169 +209,168 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         if (dump) {
             System.out.println("line from "+x1+","+y1+","+z1+" to "+x2+","+y2+","+z2);
         }
-        b.pos(x1+offsetX, y1, z1+offsetZ).color(red, green, blue, 0.0f).endVertex();
-        b.pos(x1+offsetX, y1, z1+offsetZ).color(red, green, blue, 1.0f).endVertex();
-        b.pos(x2+offsetX, y2, z2+offsetZ).color(red, green, blue, 1.0f).endVertex();
-        b.pos(x2+offsetX, y2, z2+offsetZ).color(red, green, blue, 0.0f).endVertex();
+        b.vertex(x1+offsetX, y1, z1+offsetZ).color(red, green, blue, 0.0f).next();
+        b.vertex(x1+offsetX, y1, z1+offsetZ).color(red, green, blue, 1.0f).next();
+        b.vertex(x2+offsetX, y2, z2+offsetZ).color(red, green, blue, 1.0f).next();
+        b.vertex(x2+offsetX, y2, z2+offsetZ).color(red, green, blue, 0.0f).next();
     }
     
     private void cross(BufferBuilder b, int x, int y, int z, float red, float green, float blue) {
-        b.pos(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).endVertex();
-        b.pos(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).endVertex();
-        b.pos(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).endVertex();
-        b.pos(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).endVertex();
+        b.vertex(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).next();
+        b.vertex(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
+        b.vertex(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
+        b.vertex(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).next();
     }
     
-    private void cmdShow(EntityPlayerSP sender) {
+    private void cmdShow(ClientPlayerEntity sender) {
         visible = true;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.gridshown", (Object[]) null)));
+        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridshown", (Object[]) null)));
     }
     
-    private void cmdHide(EntityPlayerSP sender) {
+    private void cmdHide(ClientPlayerEntity sender) {
         visible = false;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.gridhidden", (Object[]) null)));
+        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridhidden", (Object[]) null)));
     }
     
-    private void cmdSpawns(EntityPlayerSP sender) {
+    private void cmdSpawns(ClientPlayerEntity sender) {
         if (showSpawns) {
-            sender.sendMessage(new TextComponentString(I18n.format("msg.spawnshidden")));
+            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.spawnshidden")));
             showSpawns=false;
         } else {
-            sender.sendMessage(new TextComponentString(I18n.format("msg.spawnsshown")));
+            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.spawnsshown")));
             showSpawns=true;
         }
     }
     
-    private void cmdLines(EntityPlayerSP sender) {
+    private void cmdLines(ClientPlayerEntity sender) {
         visible = true; isBlocks = false;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.gridlines", (Object[]) null)));
+        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridlines", (Object[]) null)));
     }
     
-    private void cmdBlocks(EntityPlayerSP sender) {
+    private void cmdBlocks(ClientPlayerEntity sender) {
         visible = true; isBlocks = true;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.gridblocks", (Object[]) null)));
+        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridblocks", (Object[]) null)));
     }
     
-    private void cmdCircles(EntityPlayerSP sender) {
+    private void cmdCircles(ClientPlayerEntity sender) {
         if (isCircles) {
             isCircles = false;
-            sender.sendMessage(new TextComponentString(I18n.format("msg.gridnomorecircles", (Object[]) null)));
+            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridnomorecircles", (Object[]) null)));
         } else {
             isCircles = true;
-            sender.sendMessage(new TextComponentString(I18n.format("msg.gridcircles", (Object[]) null)));
+            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridcircles", (Object[]) null)));
         }
     }
     
-    private void cmdHere(EntityPlayerSP sender) {
-        int playerX=(int) Math.floor(sender.posX);
-        int playerZ=(int) Math.floor(sender.posZ);
+    private void cmdHere(ClientPlayerEntity sender) {
+        int playerX=(int) Math.floor(sender.x);
+        int playerZ=(int) Math.floor(sender.z);
         int playerXShift=Math.floorMod(playerX, gridX);
         int playerZShift=Math.floorMod(playerZ, gridZ);                
         offsetX=playerXShift;
         offsetZ=playerZShift;
         visible=true;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.gridaligned", (Object[]) null)));
+        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridaligned", (Object[]) null)));
     }
     
-    private void cmdFixy(EntityPlayerSP sender) {
+    private void cmdFixy(ClientPlayerEntity sender) {
         if (fixY==-1) {
-            fixY=(int) Math.floor(sender.posY);
-            sender.sendMessage(new TextComponentString(I18n.format("msg.gridheightfixed", fixY)));
+            fixY=(int) Math.floor(sender.y);
+            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridheightfixed", fixY)));
         } else {
             fixY=-1;
-            sender.sendMessage(new TextComponentString(I18n.format("msg.gridheightfloat")));
+            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridheightfloat")));
         }
     }
     
-    private void cmdChunks(EntityPlayerSP sender) {
+    private void cmdChunks(ClientPlayerEntity sender) {
         offsetX=offsetZ=0;
         gridX=gridZ=16;
         visible=true;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.gridchunks")));
+        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridchunks")));
     }
     
-    private void cmdDistance(EntityPlayerSP sender, int distance) {
+    private void cmdDistance(ClientPlayerEntity sender, int distance) {
         this.distance=distance;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.griddistance", distance)));
+        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.griddistance", distance)));
     }
     
-    private void cmdX(EntityPlayerSP sender, int coord) {
+    private void cmdX(ClientPlayerEntity sender, int coord) {
         cmdXZ(sender, coord, gridZ);
     }
 
-    private void cmdZ(EntityPlayerSP sender, int coord) {
+    private void cmdZ(ClientPlayerEntity sender, int coord) {
         cmdXZ(sender, gridX, coord);
     }
     
-    private void cmdXZ(EntityPlayerSP sender, int newX, int newZ) {
+    private void cmdXZ(ClientPlayerEntity sender, int newX, int newZ) {
         gridX=newX;
         gridZ=newZ;
         visible=true;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.gridpattern", gridX, gridZ)));
+        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridpattern", gridX, gridZ)));
     }
 
-    @Override
-    public void registerLocalCommands(CommandDispatcher<CommandSource> cd) {
+    public void registerLocalCommands(CommandDispatcher<ServerCommandSource> cd) {
         cd.register(
             literal("grid")
                 .then(
                     literal("show").executes(c->{
-                        cmdShow(Minecraft.getInstance().player);
+                        cmdShow(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("hide").executes(c->{
-                        cmdHide(Minecraft.getInstance().player);
+                        cmdHide(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("lines").executes(c->{
-                        cmdLines(Minecraft.getInstance().player);
+                        cmdLines(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("blocks").executes(c->{
-                        cmdBlocks(Minecraft.getInstance().player);
+                        cmdBlocks(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("circles").executes(c->{
-                        cmdCircles(Minecraft.getInstance().player);
+                        cmdCircles(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("here").executes(c->{
-                        cmdHere(Minecraft.getInstance().player);
+                        cmdHere(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("fixy").executes(c->{
-                        cmdFixy(Minecraft.getInstance().player);
+                        cmdFixy(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("chunks").executes(c->{
-                        cmdChunks(Minecraft.getInstance().player);
+                        cmdChunks(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("spawns").executes(c->{
-                        cmdSpawns(Minecraft.getInstance().player);
+                        cmdSpawns(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("distance").then (
                         argument("distance", integer()).executes(c->{
-                            cmdDistance(Minecraft.getInstance().player, getInteger(c, "distance"));
+                            cmdDistance(MinecraftClient.getInstance().player, getInteger(c, "distance"));
                             return 1;
                         })
                     )
@@ -381,37 +378,43 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
                 .then(
                     argument("x", integer()).then (
                         argument("z", integer()).executes(c->{
-                            cmdXZ(Minecraft.getInstance().player, getInteger(c, "x"), getInteger(c, "z"));
+                            cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "z"));
                             return 1;
                         })
                     ).executes(c->{
-                        cmdXZ(Minecraft.getInstance().player, getInteger(c, "x"), getInteger(c, "x"));
+                        cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "x"));
                         return 1;
                     })
                 )
         );
     }
 
-    @Override
-    public Collection<? extends KeyBinding> getKeyBindings() {
-        List<KeyBinding> myBindings=new ArrayList();
-        
-        myBindings.add(showHide = new KeyBinding("key.showhide", GLFW_KEY_B, "key.categories.grid"));
-        myBindings.add(gridHere = new KeyBinding("key.gridhere", GLFW_KEY_C, "key.categories.grid"));
-        myBindings.add(gridFixY = new KeyBinding("key.gridfixy", GLFW_KEY_Y, "key.categories.grid"));
-        return myBindings;
+    public void setKeyBindings() {
+        final String category="key.categories.grid";
+        KeyBindingRegistry.INSTANCE.addCategory(category);
+        KeyBindingRegistry.INSTANCE.register(
+            showHide=FabricKeyBinding.Builder
+                .create(new Identifier("grid:showhide"), InputUtil.Type.KEY_KEYBOARD, GLFW_KEY_B, category)
+                .build());
+        KeyBindingRegistry.INSTANCE.register(
+            gridHere=FabricKeyBinding.Builder
+                .create(new Identifier("grid:here"), InputUtil.Type.KEY_KEYBOARD, GLFW_KEY_C, category)
+                .build());
+        KeyBindingRegistry.INSTANCE.register(
+            gridFixY=FabricKeyBinding.Builder
+                .create(new Identifier("grid:fixy"), InputUtil.Type.KEY_KEYBOARD, GLFW_KEY_Y, category)
+                .build());
     }
 
-    @Override
     public void processKeybinds() {
-        EntityPlayerSP player = Minecraft.getInstance().player;
-        if (showHide.isPressed()) {
+        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        if (showHide.method_1436()) {       // isPressed
             visible=!visible;
         }
-        if (gridFixY.isPressed()) {
+        if (gridFixY.method_1436()) {
             cmdFixy(player);
         }
-        if (gridHere.isPressed()) {
+        if (gridHere.method_1436()) {
             cmdHere(player);
         }
     }

@@ -1,0 +1,19 @@
+{
+    "id": "grid",
+    "name": "Grid Mod",
+    "description": "Show stuff overlaid over blocks",
+    "version": "1.0.0",
+    "side": "client",
+    "authors": [
+        "Giselbaer"
+    ],
+    "initializers": [
+        "de.guntram.mcmod.grid.Grid"
+    ],
+    "requires": {
+      "fabric": "*"
+    },
+    "mixins": {
+      "client": "mixins.grid.json"
+    }
+}

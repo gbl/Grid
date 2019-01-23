@@ -1,8 +1,8 @@
 {
     "key.categories.grid": "Grid",
-    "key.showhide": "Show/Hide Grid",
-    "key.gridhere": "Align Grid around player",
-    "key.gridfixy": "Fix Grid height to player",
+    "key.grid.showhide": "Show/Hide Grid",
+    "key.grid.here": "Align Grid around player",
+    "key.grid.fixy": "Fix Grid height to player",
 
     "msg.gridshown": "Grid shown.",
     "msg.gridhidden": "Grid hidden.",
