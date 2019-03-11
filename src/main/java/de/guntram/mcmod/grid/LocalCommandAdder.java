@@ -1,4 +1,4 @@
-package org.dimdev.rift.listener.client;
+package de.guntram.mcmod.grid;
 
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.server.command.CommandSource;
