@@ -91,7 +91,7 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         thisDumpTime=System.currentTimeMillis();
         dump=false;
         if (thisDumpTime > lastDumpTime + 50000) {
-            dump=true;
+            dump=false;         // set this to true to get line info from time to time
             lastDumpTime=thisDumpTime;
         }
         

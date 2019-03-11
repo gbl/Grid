@@ -32,10 +32,10 @@ repositories {
 }
 
 dependencies {
-//    implementation 'com.github.Chocohead:Rift:jitpack-SNAPSHOT:dev'
+    implementation 'com.github.Chocohead:Rift:jitpack-SNAPSHOT:dev'
     implementation 'com.mojang:brigadier:1.0.15'
 
-    implementation 'patchurl:Rift:1.0.4-SNAPSHOT:dev'
+//    implementation 'patchurl:Rift:1.0.4-SNAPSHOT:dev'
     implementation 'org.dimdev:mixin:0.7.11-SNAPSHOT'
 }
 
