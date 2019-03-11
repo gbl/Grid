@@ -16,7 +16,7 @@ apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'java'
 
 group = "de.guntram.mcmod.grid"
-version = "1.13-rift1.0.4.77-1.2"
+version = "1.13-rift1.0.4.77-1.3"
 archivesBaseName = "grid"
 
 sourceCompatibility = '1.8'

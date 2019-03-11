@@ -3,6 +3,7 @@ package de.guntram.mcmod.grid;
 import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
+import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -43,12 +44,13 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
     private int offsetX=0;
     private int offsetZ=0;
     private int distance=30;
+    private int lightLevel=8;
     private boolean visible=false;
     private boolean isBlocks=true;
     private boolean isCircles=false;
     private boolean showSpawns=false;
 
-    KeyBinding showHide, gridHere, gridFixY;
+    KeyBinding showHide, gridHere, gridFixY, gridSpawns;
     
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
@@ -83,6 +85,8 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         int playerZ=(int) Math.floor(entityplayer.posZ);
         int playerXShift=Math.floorMod(playerX, gridX);
         int playerZShift=Math.floorMod(playerZ, gridZ);
+        if (playerXShift > gridX/2) { playerXShift -= gridX; }
+        if (playerZShift > gridZ/2) { playerZShift -= gridZ; }
         int baseX=playerX-playerXShift;
         int baseZ=playerZ-playerZShift;
         int sizeX=(distance/gridX)*gridX;
@@ -166,19 +170,20 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         }
         
         if (showSpawns) {
+            GlStateManager.lineWidth(2.0f);
             int miny=(int)(entityplayer.posY)-16;
             int maxy=(int)(entityplayer.posY)+2;
             if (miny<0) { miny=0; }
             if (maxy>255) { maxy=255; }
-            for (int x=baseX-distance; x<=baseX+distance; x++) {
-                for (int z=baseZ-distance; z<=baseZ+distance; z++) {
+            for (int x=playerX-distance; x<=playerX+distance; x++) {
+                for (int z=playerZ-distance; z<=playerZ+distance; z++) {
                     for (int y=miny; y<=maxy; y++) {
                         BlockPos pos=new BlockPos(x, y, z);
                         int spawnmode;
                         if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.SpawnPlacementType.ON_GROUND, entityplayer.world, pos, EntityType.COD)) {
-                            if (entityplayer.world.getLightFor(EnumLightType.BLOCK, pos)>=8)
+                            if (entityplayer.world.getLightFor(EnumLightType.BLOCK, pos)>=lightLevel)
                                 continue;
-                            else if (entityplayer.world.getLightFor(EnumLightType.SKY, pos)>=8)
+                            else if (entityplayer.world.getLightFor(EnumLightType.SKY, pos)>=lightLevel)
                                 cross(bufferBuilder, x, y, z, 1.0f, 1.0f, 0.0f );
                             else
                                 cross(bufferBuilder, x, y, z, 1.0f, 0.0f, 0.0f );
@@ -234,12 +239,21 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         sender.sendMessage(new TextComponentString(I18n.format("msg.gridhidden", (Object[]) null)));
     }
     
-    private void cmdSpawns(EntityPlayerSP sender) {
-        if (showSpawns) {
+    private void cmdSpawns(EntityPlayerSP sender, String newLevel) {
+        int level=8;
+        try {
+            level=Integer.parseInt(newLevel);
+        } catch (NumberFormatException | NullPointerException ex) {
+            ;
+        }
+        if (level<=0 || level>15)
+            level=8;
+        this.lightLevel=level;
+        if (showSpawns && newLevel==null) {
             sender.sendMessage(new TextComponentString(I18n.format("msg.spawnshidden")));
             showSpawns=false;
         } else {
-            sender.sendMessage(new TextComponentString(I18n.format("msg.spawnsshown")));
+            sender.sendMessage(new TextComponentString(I18n.format("msg.spawnsshown", level)));
             showSpawns=true;
         }
     }
@@ -260,6 +274,7 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
             sender.sendMessage(new TextComponentString(I18n.format("msg.gridnomorecircles", (Object[]) null)));
         } else {
             isCircles = true;
+            visible = true;
             sender.sendMessage(new TextComponentString(I18n.format("msg.gridcircles", (Object[]) null)));
         }
     }
@@ -365,8 +380,13 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
                     })
                 )
                 .then(
-                    literal("spawns").executes(c->{
-                        cmdSpawns(Minecraft.getInstance().player);
+                    literal("spawns").then(
+					    argument("lightlevel", integer()).executes(c->{
+							cmdSpawns(Minecraft.getInstance().player, ""+getInteger(c, "lightlevel"));
+                            return 1;
+						})
+					).executes(c->{
+                        cmdSpawns(Minecraft.getInstance().player, null);
                         return 1;
                     })
                 )
@@ -399,6 +419,7 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         myBindings.add(showHide = new KeyBinding("key.showhide", GLFW_KEY_B, "key.categories.grid"));
         myBindings.add(gridHere = new KeyBinding("key.gridhere", GLFW_KEY_C, "key.categories.grid"));
         myBindings.add(gridFixY = new KeyBinding("key.gridfixy", GLFW_KEY_Y, "key.categories.grid"));
+        myBindings.add(gridSpawns = new KeyBinding("key.gridspawns", GLFW_KEY_L, "key.categories.grid"));
         return myBindings;
     }
 
@@ -413,6 +434,9 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
         }
         if (gridHere.isPressed()) {
             cmdHere(player);
+        }
+        if (gridSpawns.isPressed()) {
+            cmdSpawns(player, null);
         }
     }
 }
