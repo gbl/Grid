@@ -340,10 +340,14 @@ public class Grid implements ICommand
     }
     
     private void cmdXZ(EntityPlayerSP sender, int newX, int newZ) {
-        gridX=newX;
-        gridZ=newZ;
-        visible=true;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.gridpattern", gridX, gridZ)));
+        if (newX>0 && newZ>0) {
+            gridX=newX;
+            gridZ=newZ;
+            visible=true;
+            sender.sendMessage(new TextComponentString(I18n.format("msg.gridpattern", gridX, gridZ)));
+        } else {
+            sender.sendMessage(new TextComponentString(I18n.format("msg.gridcoordspositive")));
+        }
     }
 	
     @Override

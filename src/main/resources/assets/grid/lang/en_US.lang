@@ -14,6 +14,7 @@ msg.gridheightfixed=Grid fixed to height %.1f.
 msg.gridheightfloat=Grid height floating.
 msg.gridchunks=Grid showing chunk borders.
 msg.gridpattern=Grid set to %d X blocks, %d Z blocks.
+msg.gridcoordspositive=Grid coordinates must be > 0!
 msg.griddistance=Grid distance is now %d blocks.
 msg.griddistusage=Grid distance is %d blocks.
 msg.badnumber=Parameters not recognized as integers.
