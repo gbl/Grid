@@ -3,7 +3,6 @@ package de.guntram.mcmod.grid;
 import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
-import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -321,10 +320,14 @@ public class Grid implements InitializationListener, LocalCommandAdder, KeybindH
     }
     
     private void cmdXZ(EntityPlayerSP sender, int newX, int newZ) {
-        gridX=newX;
-        gridZ=newZ;
-        visible=true;
-        sender.sendMessage(new TextComponentString(I18n.format("msg.gridpattern", gridX, gridZ)));
+        if (newX>0 && newZ>0) {
+            gridX=newX;
+            gridZ=newZ;
+            visible=true;
+            sender.sendMessage(new TextComponentString(I18n.format("msg.gridpattern", gridX, gridZ)));
+        } else {
+            sender.sendMessage(new TextComponentString(I18n.format("msg.gridcoordspositive")));
+        }
     }
 
     @Override
