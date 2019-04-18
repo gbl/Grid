@@ -1,24 +1,24 @@
-package de.guntram.mcmod.grid.mixin;
+package de.guntram.mcmod.fabrictools.mixins;
 
 import com.mojang.brigadier.suggestion.Suggestion;
-import net.minecraft.client.gui.ingame.ChatGui;
+import net.minecraft.client.gui.ingame.ChatScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import com.mojang.brigadier.suggestion.Suggestions;
-import de.guntram.mcmod.grid.LocalCommandManager;
+import de.guntram.mcmod.fabrictools.LocalCommandManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(ChatGui.class)
+@Mixin(ChatScreen.class)
 public class MixinGuiChat {
     
     @Shadow TextFieldWidget chatField;
     
-    @Redirect(method="method_2112",     // showSuggestions
+    @Redirect(method="openSuggestionsWindow",     // showSuggestions
             at=@At(value="INVOKE",
                    target="Ljava/util/concurrent/CompletableFuture;join()Ljava/lang/Object;",
                    remap=false)

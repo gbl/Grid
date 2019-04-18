@@ -1,5 +1,6 @@
-package de.guntram.mcmod.grid.mixin;
+package de.guntram.mcmod.fabrictools.mixins;
 
+import de.guntram.mcmod.fabrictools.KeyBindingManager;
 import de.guntram.mcmod.grid.Grid;
 import net.minecraft.client.MinecraftClient;
 import org.spongepowered.asm.mixin.Mixin;
@@ -9,8 +10,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftClient.class)
 public class MixinProcessKeys {
-    @Inject(method="method_1508", at=@At("HEAD"))
+    @Inject(method="handleInputEvents", at=@At("HEAD"))
     public void onProcessKeybinds(CallbackInfo ci) {
-        Grid.instance.processKeybinds();
+        KeyBindingManager.processKeyBinds();
     }
 }

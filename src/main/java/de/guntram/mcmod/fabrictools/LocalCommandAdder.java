@@ -1,4 +1,4 @@
-package de.guntram.mcmod.grid;
+package de.guntram.mcmod.fabrictools;
 
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.server.command.CommandSource;

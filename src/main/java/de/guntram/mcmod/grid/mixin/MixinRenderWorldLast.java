@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public abstract class MixinRenderWorldLast {
 
-    @Inject(method="method_3178(FJ)V",
+    @Inject(method="renderCenter(FJ)V",
             at=@At(value="INVOKE_STRING",
                    target="Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V",
                    args= { "ldc=hand" }

@@ -1,7 +1,7 @@
-package de.guntram.mcmod.grid.mixin;
+package de.guntram.mcmod.fabrictools.mixins;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import de.guntram.mcmod.grid.LocalCommandManager;
+import de.guntram.mcmod.fabrictools.LocalCommandManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

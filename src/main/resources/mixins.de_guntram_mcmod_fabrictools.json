@@ -1,12 +1,15 @@
 {
     "required": true,
-    "package": "de.guntram.mcmod.grid.mixin",
+    "package": "de.guntram.mcmod.fabrictools.mixins",
     "refmap": "Grid-Fabric-refmap.json",
     "minVersion": "0.6",
     "client": [
-        "MixinRenderWorldLast"
+        "MixinGuiChat",
+        "MixinLocalCommand",
+        "MixinProcessKeys"
     ],
     "client-disabled": [
+    	"MixinKeyBinding"
     ],
     "injectors": {
         "defaultRequire": 1

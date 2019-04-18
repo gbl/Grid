@@ -1,4 +1,4 @@
-package de.guntram.mcmod.grid.mixin;
+package de.guntram.mcmod.fabrictools.mixins;
 
 import java.util.Map;
 import net.minecraft.client.options.KeyBinding;

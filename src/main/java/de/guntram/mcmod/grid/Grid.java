@@ -1,9 +1,12 @@
 package de.guntram.mcmod.grid;
 
+import de.guntram.mcmod.fabrictools.LocalCommandManager;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
+import de.guntram.mcmod.fabrictools.KeyBindingHandler;
+import de.guntram.mcmod.fabrictools.KeyBindingManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.FabricKeyBinding;
 import net.fabricmc.fabric.api.client.keybinding.KeyBindingRegistry;
@@ -15,18 +18,20 @@ import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.InputUtil;
-import static net.minecraft.server.command.ServerCommandManager.argument;
-import static net.minecraft.server.command.ServerCommandManager.literal;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityPose;
+import static net.minecraft.server.command.CommandManager.argument;
+import static net.minecraft.server.command.CommandManager.literal;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.sortme.SpawnHelper;
-import net.minecraft.sortme.SpawnRestriction;
+import net.minecraft.world.SpawnHelper;
+import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.text.StringTextComponent;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LightType;
 import static org.lwjgl.glfw.GLFW.*;
 
-public class Grid implements ClientModInitializer
+public class Grid implements ClientModInitializer, KeyBindingHandler
 {
     static final String MODID="grid";
     static final String VERSION="@VERSION@";
@@ -59,9 +64,9 @@ public class Grid implements ClientModInitializer
         if (!visible && !showSpawns)
             return;
 
-        ClientPlayerEntity entityplayer = MinecraftClient.getInstance().player;
+        Entity entityplayer = MinecraftClient.getInstance().getCameraEntity();
         double cameraX = entityplayer.prevRenderX + (entityplayer.x - entityplayer.prevRenderX) * (double)partialTicks;
-        double cameraY = entityplayer.prevRenderY + (entityplayer.y - entityplayer.prevRenderY) * (double)partialTicks;
+        double cameraY = entityplayer.prevRenderY + (entityplayer.y - entityplayer.prevRenderY) * (double)partialTicks + entityplayer.getEyeHeight(entityplayer.getPose());
         double cameraZ = entityplayer.prevRenderZ + (entityplayer.z - entityplayer.prevRenderZ) * (double)partialTicks;        
 
         GlStateManager.disableTexture();
@@ -170,9 +175,9 @@ public class Grid implements ClientModInitializer
                         BlockPos pos=new BlockPos(x, y, z);
                         int spawnmode;
                         if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, entityplayer.world, pos, EntityType.COD)) {
-                            if (entityplayer.world.getLightLevel(LightType.BLOCK_LIGHT, pos)>=8)
+                            if (entityplayer.world.getLightLevel(LightType.BLOCK, pos)>=8)
                                 continue;
-                            else if (entityplayer.world.getLightLevel(LightType.SKY_LIGHT, pos)>=8)
+                            else if (entityplayer.world.getLightLevel(LightType.SKY, pos)>=8)
                                 cross(bufferBuilder, x, y, z, 1.0f, 1.0f, 0.0f );
                             else
                                 cross(bufferBuilder, x, y, z, 1.0f, 0.0f, 0.0f );
@@ -390,27 +395,29 @@ public class Grid implements ClientModInitializer
         KeyBindingRegistry.INSTANCE.addCategory(category);
         KeyBindingRegistry.INSTANCE.register(
             showHide=FabricKeyBinding.Builder
-                .create(new Identifier("grid:showhide"), InputUtil.Type.KEY_KEYBOARD, GLFW_KEY_B, category)
+                .create(new Identifier("grid:showhide"), InputUtil.Type.KEYSYM, GLFW_KEY_B, category)
                 .build());
         KeyBindingRegistry.INSTANCE.register(
             gridHere=FabricKeyBinding.Builder
-                .create(new Identifier("grid:here"), InputUtil.Type.KEY_KEYBOARD, GLFW_KEY_C, category)
+                .create(new Identifier("grid:here"), InputUtil.Type.KEYSYM, GLFW_KEY_C, category)
                 .build());
         KeyBindingRegistry.INSTANCE.register(
             gridFixY=FabricKeyBinding.Builder
-                .create(new Identifier("grid:fixy"), InputUtil.Type.KEY_KEYBOARD, GLFW_KEY_Y, category)
+                .create(new Identifier("grid:fixy"), InputUtil.Type.KEYSYM, GLFW_KEY_Y, category)
                 .build());
+        KeyBindingManager.register(this);
     }
 
-    public void processKeybinds() {
+    @Override
+    public void processKeyBinds() {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
-        if (showHide.method_1436()) {       // isPressed
+        if (showHide.wasPressed()) {
             visible=!visible;
         }
-        if (gridFixY.method_1436()) {
+        if (gridFixY.wasPressed()) {
             cmdFixy(player);
         }
-        if (gridHere.method_1436()) {
+        if (gridHere.wasPressed()) {
             cmdHere(player);
         }
     }
