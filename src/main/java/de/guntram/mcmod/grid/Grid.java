@@ -19,7 +19,6 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPose;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 import net.minecraft.server.command.ServerCommandSource;
@@ -43,12 +42,13 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
     private int offsetX=0;
     private int offsetZ=0;
     private int distance=30;
-    private boolean visible=true;
+    private int lightLevel=8;
+    private boolean visible=false;
     private boolean isBlocks=true;
     private boolean isCircles=false;
-    private boolean showSpawns=true;
+    private boolean showSpawns=false;
 
-    FabricKeyBinding showHide, gridHere, gridFixY;
+    FabricKeyBinding showHide, gridHere, gridFixY, gridSpawns;
     
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
@@ -90,7 +90,7 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
         thisDumpTime=System.currentTimeMillis();
         dump=false;
         if (thisDumpTime > lastDumpTime + 50000) {
-            dump=true;
+            dump=false;         // set this to true to get line info from time to time
             lastDumpTime=thisDumpTime;
         }
         
@@ -233,12 +233,22 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
         sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridhidden", (Object[]) null)));
     }
     
-    private void cmdSpawns(ClientPlayerEntity sender) {
-        if (showSpawns) {
+    private void cmdSpawns(ClientPlayerEntity sender, String newLevel) {
+        int level=8;
+        try {
+            level=Integer.parseInt(newLevel);
+        } catch (NumberFormatException | NullPointerException ex) {
+            ;
+        }
+        if (level<=0 || level>15)
+            level=8;
+        this.lightLevel=level;
+        if (showSpawns && newLevel==null) {
+
             sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.spawnshidden")));
             showSpawns=false;
         } else {
-            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.spawnsshown")));
+            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.spawnsshown", level)));
             showSpawns=true;
         }
     }
@@ -259,6 +269,7 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
             sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridnomorecircles", (Object[]) null)));
         } else {
             isCircles = true;
+            visible = true;
             sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridcircles", (Object[]) null)));
         }
     }
@@ -305,10 +316,14 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
     }
     
     private void cmdXZ(ClientPlayerEntity sender, int newX, int newZ) {
-        gridX=newX;
-        gridZ=newZ;
-        visible=true;
-        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridpattern", gridX, gridZ)));
+        if (newX>0 && newZ>0) {
+            gridX=newX;
+            gridZ=newZ;
+            visible=true;
+        	sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridpattern", gridX, gridZ)));
+        } else {
+            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridcoordspositive")));
+        }
     }
 
     public void registerLocalCommands(CommandDispatcher<ServerCommandSource> cd) {
@@ -363,8 +378,13 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
                     })
                 )
                 .then(
-                    literal("spawns").executes(c->{
-                        cmdSpawns(MinecraftClient.getInstance().player);
+                    literal("spawns").then(
+					    argument("lightlevel", integer()).executes(c->{
+							cmdSpawns(MinecraftClient.getInstance().player, ""+getInteger(c, "lightlevel"));
+                            return 1;
+						})
+					).executes(c->{
+                        cmdSpawns(MinecraftClient.getInstance().player, null);
                         return 1;
                     })
                 )
@@ -405,6 +425,10 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
             gridFixY=FabricKeyBinding.Builder
                 .create(new Identifier("grid:fixy"), InputUtil.Type.KEYSYM, GLFW_KEY_Y, category)
                 .build());
+        KeyBindingRegistry.INSTANCE.register(
+            gridSpawns=FabricKeyBinding.Builder
+                .create(new Identifier("grid:spawns"), InputUtil.Type.KEYSYM, GLFW_KEY_L, category)
+                .build());
         KeyBindingManager.register(this);
     }
 
@@ -419,6 +443,9 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
         }
         if (gridHere.wasPressed()) {
             cmdHere(player);
+        }
+        if (gridSpawns.wasPressed()) {
+            cmdSpawns(player, null);
         }
     }
 }

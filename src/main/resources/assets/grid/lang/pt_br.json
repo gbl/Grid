@@ -1,0 +1,25 @@
+{
+    "key.categories.grid":"Grade",
+    "key.grid.showhide":"Exibir/Ocultar grade",
+    "key.grid.here":"Alinhar grade em volta do jogador",
+    "key.grid.fixy":"Fixar grade na altura do jogador",
+    "key.grid.spawns":"Exibir/Ocultar blocos do spawn",
+
+    "msg.gridshown":"Grade exibida.",
+    "msg.gridhidden":"Grade ocultada.",
+    "msg.gridlines":"Grade exibindo linhas.",
+    "msg.gridblocks":"Grade exibindo blocos.",
+    "msg.gridcircles":"Grade exibindo círculos.",
+    "msg.gridnomorecircles":"Grade ocultando círculos.",
+    "msg.gridaligned":"Grade centralizada ao redor do jogador.",
+    "msg.gridheightfixed": "Grade fixada na altura %.1f.",
+    "msg.gridheightfloat":"Grade com altura flutuante.",
+    "msg.gridchunks":"Grade exibindo bordas do chunk.",
+    "msg.gridpattern":"Grade definida para %d X blocos, %d Z blocos.",
+    "msg.gridcoordspositive":"As coordenadas da grade devem ser > 0!",
+    "msg.griddistance":"A distância da grade agora é de %d blocos.",
+    "msg.griddistusage":"A distância da grade é de %d blocos.",
+    "msg.badnumber":"Parâmetros não reconhecidos como números inteiros.",
+    "msg.spawnsshown":"Locais de spawn de monstros exibidos (Nível de luz < %d)",
+    "msg.spawnshidden":"Locais de spawn de monstros ocultados"
+}
