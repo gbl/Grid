@@ -33,6 +33,7 @@ import static org.lwjgl.glfw.GLFW.*;
 public class Grid implements ClientModInitializer, KeyBindingHandler
 {
     static final String MODID="grid";
+    static final String MODNAME="Grid";
     static final String VERSION="@VERSION@";
     public static Grid instance;
     

@@ -1,19 +1,25 @@
 {
+    "schemaVersion": 1,
     "id": "grid",
-    "name": "Grid Mod",
-    "description": "Show stuff overlaid over blocks",
-    "version": "1.0.0",
-    "side": "client",
-    "authors": [
-        "Giselbaer"
+    "version": "1.14pre5-fabric0.4.1-1.3",
+    "environment": "client",
+    "entrypoints": {
+        "client": [ "de.guntram.mcmod.grid.Grid" ],
+        "NOTYETmodmenu": [ "de.guntram.mcmod.grid.MMConfigurationHandler" ]
+    },
+    "custom": {
+        "modmenu:clientsideOnly": true
+    },
+    "mixins": [
+      	"mixins.grid.json", "mixins.grid_fabrictools.json"
     ],
-    "initializers": [
-        "de.guntram.mcmod.grid.Grid"
-    ],
-    "requires": {
+    "depends": {
       "fabric": "*"
     },
-    "mixins": {
-      "client": [ "mixins.grid.json", "mixins.grid_fabrictools.json" ]
-    }
+    "recommends": {
+      "modmenu" : "*"
+    },
+    "name": "Grid",
+    "description": "Show stuff overlaid over blocks",
+    "authors": [ "Giselbaer" ]
 }
