@@ -11,7 +11,7 @@
         "modmenu:clientsideOnly": true
     },
     "mixins": [
-      	"mixins.grid.json", "mixins.grid_fabrictools.json"
+      	"mixins.grid.json"
     ],
     "depends": {
       "fabric": "*"
