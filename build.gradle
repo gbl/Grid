@@ -9,6 +9,10 @@ repositories {
 	maven {
 		url = "https://minecraft.guntram.de/maven/"
 	}
+    maven {
+        name = 'CottonMC'
+        url = 'http://server.bbkr.space:8081/artifactory/libs-snapshot'
+    }    
 }
 
 sourceCompatibility = 1.8
@@ -21,12 +25,14 @@ minecraft {
 }
 
 dependencies {
-	minecraft "com.mojang:minecraft:1.14 Pre-Release 5"
-	mappings "net.fabricmc:yarn:1.14 Pre-Release 5+build.3"
+	minecraft  "com.mojang:minecraft:1.14 Pre-Release 5"
+	mappings   "net.fabricmc:yarn:1.14 Pre-Release 5+build.3"
 	modCompile "net.fabricmc:fabric-loader:0.4.1+build.127"
 	modCompile "io.github.prospector.modmenu:ModMenu:1.4.0-72"
 	modCompile "de.guntram.mcmod:GBfabrictools:1.0.0"
-	include    "de.guntram.mcmod:GBfabrictools:1.0.0"    
+	include    "de.guntram.mcmod:GBfabrictools:1.0.0"
+        modCompile "io.github.cottonmc:client-commands:0.2.1+1.14-pre5-SNAPSHOT"
+        include    "io.github.cottonmc:client-commands:0.2.1+1.14-pre5-SNAPSHOT"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modCompile "net.fabricmc:fabric:0.2.7+build.126"

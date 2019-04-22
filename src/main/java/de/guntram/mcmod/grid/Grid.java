@@ -1,12 +1,13 @@
 package de.guntram.mcmod.grid;
 
-import de.guntram.mcmod.fabrictools.LocalCommandManager;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import de.guntram.mcmod.fabrictools.KeyBindingHandler;
 import de.guntram.mcmod.fabrictools.KeyBindingManager;
+import static io.github.cottonmc.clientcommands.ArgumentBuilders.argument;
+import static io.github.cottonmc.clientcommands.ArgumentBuilders.literal;
+import io.github.cottonmc.clientcommands.ClientCommands;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.FabricKeyBinding;
 import net.fabricmc.fabric.api.client.keybinding.KeyBindingRegistry;
@@ -19,9 +20,6 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.Entity;
-import static net.minecraft.server.command.CommandManager.argument;
-import static net.minecraft.server.command.CommandManager.literal;
-import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.world.SpawnHelper;
 import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.text.StringTextComponent;
@@ -58,7 +56,7 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
     public void onInitializeClient() {
         instance=this;
         setKeyBindings();
-        registerLocalCommands(LocalCommandManager.getDispatcher());
+        registerLocalCommands();
     }
     
     public void renderOverlay(float partialTicks) {
@@ -327,7 +325,8 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
         }
     }
 
-    public void registerLocalCommands(CommandDispatcher<ServerCommandSource> cd) {
+    public void registerLocalCommands() {
+        ClientCommands.registerCommand(cd -> {
         cd.register(
             literal("grid")
                 .then(
@@ -408,7 +407,7 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
                         return 1;
                     })
                 )
-        );
+        );});
     }
 
     public void setKeyBindings() {
