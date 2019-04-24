@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "id": "grid",
-    "version": "1.14pre5-fabric0.4.1-1.3",
+    "version": "1.14-fabric0.2.7-1.3",
     "environment": "client",
     "entrypoints": {
         "client": [ "de.guntram.mcmod.grid.Grid" ],
@@ -20,6 +20,12 @@
       "modmenu" : "*"
     },
     "name": "Grid",
-    "description": "Show stuff overlaid over blocks",
-    "authors": [ "Giselbaer" ]
+    "description": "Markers to help with counting blocks, building circles, and showing possible mob spawn locations",
+    "icon": "pack.png",
+    "authors": [ "Giselbaer" ],
+    "contact": {
+        "homepage": "https://minecraft.curseforge.com/projects/grid",
+        "sources": "https://github.com/gbl/Grid",
+        "issues": "https://github.com/gbl/Grid/issues"
+    }
 }

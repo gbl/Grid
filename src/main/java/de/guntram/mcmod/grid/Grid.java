@@ -224,12 +224,12 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
     
     private void cmdShow(ClientPlayerEntity sender) {
         visible = true;
-        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridshown", (Object[]) null)));
+        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridshown", (Object[]) null)), false);
     }
     
     private void cmdHide(ClientPlayerEntity sender) {
         visible = false;
-        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridhidden", (Object[]) null)));
+        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridhidden", (Object[]) null)), false);
     }
     
     private void cmdSpawns(ClientPlayerEntity sender, String newLevel) {
@@ -244,32 +244,32 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
         this.lightLevel=level;
         if (showSpawns && newLevel==null) {
 
-            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.spawnshidden")));
+            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.spawnshidden")), false);
             showSpawns=false;
         } else {
-            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.spawnsshown", level)));
+            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.spawnsshown", level)), false);
             showSpawns=true;
         }
     }
     
     private void cmdLines(ClientPlayerEntity sender) {
         visible = true; isBlocks = false;
-        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridlines", (Object[]) null)));
+        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridlines", (Object[]) null)), false);
     }
     
     private void cmdBlocks(ClientPlayerEntity sender) {
         visible = true; isBlocks = true;
-        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridblocks", (Object[]) null)));
+        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridblocks", (Object[]) null)), false);
     }
     
     private void cmdCircles(ClientPlayerEntity sender) {
         if (isCircles) {
             isCircles = false;
-            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridnomorecircles", (Object[]) null)));
+            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridnomorecircles", (Object[]) null)), false);
         } else {
             isCircles = true;
             visible = true;
-            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridcircles", (Object[]) null)));
+            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridcircles", (Object[]) null)), false);
         }
     }
     
@@ -281,16 +281,16 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
         offsetX=playerXShift;
         offsetZ=playerZShift;
         visible=true;
-        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridaligned", (Object[]) null)));
+        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridaligned", (Object[]) null)), false);
     }
     
     private void cmdFixy(ClientPlayerEntity sender) {
         if (fixY==-1) {
             fixY=(int) Math.floor(sender.y);
-            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridheightfixed", fixY)));
+            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridheightfixed", fixY)), false);
         } else {
             fixY=-1;
-            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridheightfloat")));
+            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridheightfloat")), false);
         }
     }
     
@@ -298,12 +298,12 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
         offsetX=offsetZ=0;
         gridX=gridZ=16;
         visible=true;
-        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridchunks")));
+        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridchunks")), false);
     }
     
     private void cmdDistance(ClientPlayerEntity sender, int distance) {
         this.distance=distance;
-        sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.griddistance", distance)));
+        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.griddistance", distance)), false);
     }
     
     private void cmdX(ClientPlayerEntity sender, int coord) {
@@ -319,9 +319,9 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
             gridX=newX;
             gridZ=newZ;
             visible=true;
-        	sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridpattern", gridX, gridZ)));
+        	sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridpattern", gridX, gridZ)), false);
         } else {
-            sender.appendCommandFeedback(new StringTextComponent(I18n.translate("msg.gridcoordspositive")));
+            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridcoordspositive")), false);
         }
     }
 
