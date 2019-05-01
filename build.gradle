@@ -19,7 +19,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 archivesBaseName = "grid"
-version = "1.14-fabric0.2.7-1.3"
+version = "1.14-fabric0.2.7-1.4"
 
 minecraft {
 }

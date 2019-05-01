@@ -6,8 +6,6 @@
     "client": [
         "MixinRenderWorldLast"
     ],
-    "client-disabled": [
-    ],
     "injectors": {
         "defaultRequire": 1
     }

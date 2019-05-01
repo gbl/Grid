@@ -94,7 +94,13 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
         }
         
         if (visible) {
-            float y=((float)(fixY==-1 ? entityplayer.y : fixY)+0.05f);
+            float y=((float)(fixY==-1 ? entityplayer.y : fixY));
+            if (entityplayer.y+entityplayer.getEyeHeight(entityplayer.getPose()) > y) {
+                y+=0.05f;
+            } else {
+                y-=0.05f;
+            }
+                
             int circRadSquare=(gridX/2)*(gridX/2);
             if (isBlocks) {
                 GlStateManager.lineWidth(3.0f);
@@ -286,12 +292,16 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
     
     private void cmdFixy(ClientPlayerEntity sender) {
         if (fixY==-1) {
-            fixY=(int) Math.floor(sender.y);
-            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridheightfixed", fixY)), false);
+            cmdFixy(sender, (int)Math.floor(sender.y));
         } else {
             fixY=-1;
             sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridheightfloat")), false);
         }
+    }
+
+    private void cmdFixy(ClientPlayerEntity sender, int level) {
+            fixY=level;
+            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridheightfixed", fixY)), false);
     }
     
     private void cmdChunks(ClientPlayerEntity sender) {
@@ -366,7 +376,12 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
                     })
                 )
                 .then(
-                    literal("fixy").executes(c->{
+                    literal("fixy").then(
+                        argument("y", integer()).executes(c->{
+                            cmdFixy(MinecraftClient.getInstance().player, getInteger(c, "y"));
+                            return 1;
+                        })
+                    ).executes(c->{
                         cmdFixy(MinecraftClient.getInstance().player);
                         return 1;
                     })

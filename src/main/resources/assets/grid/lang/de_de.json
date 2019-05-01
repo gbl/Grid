@@ -1,0 +1,25 @@
+{
+    "key.categories.grid": "Gitter",
+    "key.grid.showhide": "Gitter zeigen/verstecken",
+    "key.grid.here": "Gitter auf Spieler zentrieren",
+    "key.grid.fixy": "Gitterhöhe fixieren",
+    "key.grid.spawns": "Spawnblöcke zeigen/verstecken",
+
+    "msg.gridshown": "Gitter angezeigt.",
+    "msg.gridhidden": "Gitter versteckt.",
+    "msg.gridlines": "Gitter zeigt Linien.",
+    "msg.gridblocks": "Gitter zeigt Blöcke.",
+    "msg.gridcircles": "Gitter zeigt Kreise.",
+    "msg.gridnomorecircles": "Gitter versteckt Kreise.",
+    "msg.gridaligned": "Gitter um Spieler zentriert.",
+    "msg.gridheightfixed": "Gitter auf Höhe %.1f fixiert.",
+    "msg.gridheightfloat": "Gitterhöhe fließend.",
+    "msg.gridchunks": "Gitter zeigt Chunkgrenzen.",
+    "msg.gridpattern": "Gitter auf %d X-Blöcke, %d Z-Blöcke gesetzt.",
+    "msg.gridcoordspositive": "Gitterkoordinaten müssen > 0 sein!",
+    "msg.griddistance": "Gitterdistanz ist jetzt %d Blöcke",
+    "msg.griddistusage": "Gitterdistanz ist %d Blöcke.",
+    "msg.badnumber": "Parameter sind keine ganzen Zahlen.",
+    "msg.spawnsshown": "Spawnblöcke angezeigt (Licht < %d)",
+    "msg.spawnshidden": "Spawnblöcke versteckt"
+}
