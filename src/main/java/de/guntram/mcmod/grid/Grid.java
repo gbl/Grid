@@ -1,12 +1,14 @@
 package de.guntram.mcmod.grid;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import de.guntram.mcmod.fabrictools.KeyBindingHandler;
 import de.guntram.mcmod.fabrictools.KeyBindingManager;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.argument;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.literal;
+import io.github.cottonmc.clientcommands.ClientCommandPlugin;
 import io.github.cottonmc.clientcommands.ClientCommands;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.FabricKeyBinding;
@@ -22,13 +24,14 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.Entity;
 import net.minecraft.world.SpawnHelper;
 import net.minecraft.entity.SpawnRestriction;
+import net.minecraft.server.command.CommandSource;
 import net.minecraft.text.StringTextComponent;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LightType;
 import static org.lwjgl.glfw.GLFW.*;
 
-public class Grid implements ClientModInitializer, KeyBindingHandler
+public class Grid implements ClientModInitializer, KeyBindingHandler, ClientCommandPlugin
 {
     static final String MODID="grid";
     static final String MODNAME="Grid";
@@ -56,7 +59,6 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
     public void onInitializeClient() {
         instance=this;
         setKeyBindings();
-        registerLocalCommands();
     }
     
     public void renderOverlay(float partialTicks) {
@@ -180,9 +182,9 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
                         BlockPos pos=new BlockPos(x, y, z);
                         int spawnmode;
                         if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, entityplayer.world, pos, EntityType.COD)) {
-                            if (entityplayer.world.getLightLevel(LightType.BLOCK, pos)>=8)
+                            if (entityplayer.world.getLightLevel(LightType.BLOCK, pos)>=lightLevel)
                                 continue;
-                            else if (entityplayer.world.getLightLevel(LightType.SKY, pos)>=8)
+                            else if (entityplayer.world.getLightLevel(LightType.SKY, pos)>=lightLevel)
                                 cross(bufferBuilder, x, y, z, 1.0f, 1.0f, 0.0f );
                             else
                                 cross(bufferBuilder, x, y, z, 1.0f, 0.0f, 0.0f );
@@ -335,78 +337,78 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
         }
     }
 
-    public void registerLocalCommands() {
-        ClientCommands.registerCommand(cd -> {
+    @Override
+    public void registerCommands(CommandDispatcher<CommandSource> cd) {
         cd.register(
             literal("grid")
                 .then(
                     literal("show").executes(c->{
-                        cmdShow(MinecraftClient.getInstance().player);
+                        instance.cmdShow(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("hide").executes(c->{
-                        cmdHide(MinecraftClient.getInstance().player);
+                        instance.cmdHide(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("lines").executes(c->{
-                        cmdLines(MinecraftClient.getInstance().player);
+                        instance.cmdLines(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("blocks").executes(c->{
-                        cmdBlocks(MinecraftClient.getInstance().player);
+                        instance.cmdBlocks(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("circles").executes(c->{
-                        cmdCircles(MinecraftClient.getInstance().player);
+                        instance.cmdCircles(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("here").executes(c->{
-                        cmdHere(MinecraftClient.getInstance().player);
+                        instance.cmdHere(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("fixy").then(
                         argument("y", integer()).executes(c->{
-                            cmdFixy(MinecraftClient.getInstance().player, getInteger(c, "y"));
+                            instance.cmdFixy(MinecraftClient.getInstance().player, getInteger(c, "y"));
                             return 1;
                         })
                     ).executes(c->{
-                        cmdFixy(MinecraftClient.getInstance().player);
+                        instance.cmdFixy(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("chunks").executes(c->{
-                        cmdChunks(MinecraftClient.getInstance().player);
+                        instance.cmdChunks(MinecraftClient.getInstance().player);
                         return 1;
                     })
                 )
                 .then(
                     literal("spawns").then(
 					    argument("lightlevel", integer()).executes(c->{
-							cmdSpawns(MinecraftClient.getInstance().player, ""+getInteger(c, "lightlevel"));
+							instance.cmdSpawns(MinecraftClient.getInstance().player, ""+getInteger(c, "lightlevel"));
                             return 1;
 						})
 					).executes(c->{
-                        cmdSpawns(MinecraftClient.getInstance().player, null);
+                        instance.cmdSpawns(MinecraftClient.getInstance().player, null);
                         return 1;
                     })
                 )
                 .then(
                     literal("distance").then (
                         argument("distance", integer()).executes(c->{
-                            cmdDistance(MinecraftClient.getInstance().player, getInteger(c, "distance"));
+                            instance.cmdDistance(MinecraftClient.getInstance().player, getInteger(c, "distance"));
                             return 1;
                         })
                     )
@@ -414,15 +416,15 @@ public class Grid implements ClientModInitializer, KeyBindingHandler
                 .then(
                     argument("x", integer()).then (
                         argument("z", integer()).executes(c->{
-                            cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "z"));
+                            instance.cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "z"));
                             return 1;
                         })
                     ).executes(c->{
-                        cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "x"));
+                        instance.cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "x"));
                         return 1;
                     })
                 )
-        );});
+        );
     }
 
     public void setKeyBindings() {

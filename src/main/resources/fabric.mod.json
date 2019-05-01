@@ -1,11 +1,12 @@
 {
     "schemaVersion": 1,
     "id": "grid",
-    "version": "1.14-fabric0.2.7-1.4",
+    "version": "1.14-fabric0.2.7-1.4.1",
     "environment": "client",
     "entrypoints": {
         "client": [ "de.guntram.mcmod.grid.Grid" ],
-        "NOTYETmodmenu": [ "de.guntram.mcmod.grid.MMConfigurationHandler" ]
+        "NOTYETmodmenu": [ "de.guntram.mcmod.grid.MMConfigurationHandler" ],
+        "cotton-client-commands": ["de.guntram.mcmod.grid.Grid"]
     },
     "custom": {
         "modmenu:clientsideOnly": true

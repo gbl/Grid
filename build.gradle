@@ -19,7 +19,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 archivesBaseName = "grid"
-version = "1.14-fabric0.2.7-1.4"
+version = "1.14-fabric0.2.7-1.4.1"
 
 minecraft {
 }
@@ -31,8 +31,8 @@ dependencies {
 	modCompile "io.github.prospector.modmenu:ModMenu:1.4.0-72"
 	modCompile "de.guntram.mcmod:GBfabrictools:1.0.0"
 	include    "de.guntram.mcmod:GBfabrictools:1.0.0"
-    modCompile "io.github.cottonmc:client-commands:0.2.1+1.14-pre5-SNAPSHOT"
-    include    "io.github.cottonmc:client-commands:0.2.1+1.14-pre5-SNAPSHOT"
+    modCompile "io.github.cottonmc:cotton-client-commands:0.3.0+1.14-SNAPSHOT"
+    // include    "io.github.cottonmc:cotton-client-commands:0.3.0+1.14-SNAPSHOT"
 
     // Fabric API. This is technically optional, but you probably want it anyway.
 	modCompile "net.fabricmc:fabric:0.2.7+build.127"
