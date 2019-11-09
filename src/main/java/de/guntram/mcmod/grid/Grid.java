@@ -4,15 +4,14 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
-import de.guntram.mcmod.fabrictools.KeyBindingHandler;
-import de.guntram.mcmod.fabrictools.KeyBindingManager;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.argument;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.literal;
 import io.github.cottonmc.clientcommands.ClientCommandPlugin;
-import io.github.cottonmc.clientcommands.ClientCommands;
+import io.github.cottonmc.clientcommands.CottonClientCommandSource;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.FabricKeyBinding;
 import net.fabricmc.fabric.api.client.keybinding.KeyBindingRegistry;
+import net.fabricmc.fabric.api.event.client.ClientTickCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
@@ -24,14 +23,16 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.Entity;
 import net.minecraft.world.SpawnHelper;
 import net.minecraft.entity.SpawnRestriction;
-import net.minecraft.server.command.CommandSource;
-import net.minecraft.text.StringTextComponent;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LightType;
-import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_B;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_C;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_L;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_Y;
 
-public class Grid implements ClientModInitializer, KeyBindingHandler, ClientCommandPlugin
+public class Grid implements ClientModInitializer, ClientCommandPlugin
 {
     static final String MODID="grid";
     static final String MODNAME="Grid";
@@ -232,12 +233,12 @@ public class Grid implements ClientModInitializer, KeyBindingHandler, ClientComm
     
     private void cmdShow(ClientPlayerEntity sender) {
         visible = true;
-        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridshown", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridshown", (Object[]) null)), false);
     }
     
     private void cmdHide(ClientPlayerEntity sender) {
         visible = false;
-        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridhidden", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridhidden", (Object[]) null)), false);
     }
     
     private void cmdSpawns(ClientPlayerEntity sender, String newLevel) {
@@ -252,32 +253,32 @@ public class Grid implements ClientModInitializer, KeyBindingHandler, ClientComm
         this.lightLevel=level;
         if (showSpawns && newLevel==null) {
 
-            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.spawnshidden")), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.spawnshidden")), false);
             showSpawns=false;
         } else {
-            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.spawnsshown", level)), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.spawnsshown", level)), false);
             showSpawns=true;
         }
     }
     
     private void cmdLines(ClientPlayerEntity sender) {
         visible = true; isBlocks = false;
-        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridlines", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridlines", (Object[]) null)), false);
     }
     
     private void cmdBlocks(ClientPlayerEntity sender) {
         visible = true; isBlocks = true;
-        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridblocks", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridblocks", (Object[]) null)), false);
     }
     
     private void cmdCircles(ClientPlayerEntity sender) {
         if (isCircles) {
             isCircles = false;
-            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridnomorecircles", (Object[]) null)), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridnomorecircles", (Object[]) null)), false);
         } else {
             isCircles = true;
             visible = true;
-            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridcircles", (Object[]) null)), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridcircles", (Object[]) null)), false);
         }
     }
     
@@ -289,7 +290,7 @@ public class Grid implements ClientModInitializer, KeyBindingHandler, ClientComm
         offsetX=playerXShift;
         offsetZ=playerZShift;
         visible=true;
-        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridaligned", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridaligned", (Object[]) null)), false);
     }
     
     private void cmdFixy(ClientPlayerEntity sender) {
@@ -297,25 +298,25 @@ public class Grid implements ClientModInitializer, KeyBindingHandler, ClientComm
             cmdFixy(sender, (int)Math.floor(sender.y));
         } else {
             fixY=-1;
-            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridheightfloat")), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridheightfloat")), false);
         }
     }
 
     private void cmdFixy(ClientPlayerEntity sender, int level) {
             fixY=level;
-            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridheightfixed", fixY)), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridheightfixed", fixY)), false);
     }
     
     private void cmdChunks(ClientPlayerEntity sender) {
         offsetX=offsetZ=0;
         gridX=gridZ=16;
         visible=true;
-        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridchunks")), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridchunks")), false);
     }
     
     private void cmdDistance(ClientPlayerEntity sender, int distance) {
         this.distance=distance;
-        sender.addChatMessage(new StringTextComponent(I18n.translate("msg.griddistance", distance)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.griddistance", distance)), false);
     }
     
     private void cmdX(ClientPlayerEntity sender, int coord) {
@@ -331,14 +332,14 @@ public class Grid implements ClientModInitializer, KeyBindingHandler, ClientComm
             gridX=newX;
             gridZ=newZ;
             visible=true;
-        	sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridpattern", gridX, gridZ)), false);
+        	sender.addChatMessage(new LiteralText(I18n.translate("msg.gridpattern", gridX, gridZ)), false);
         } else {
-            sender.addChatMessage(new StringTextComponent(I18n.translate("msg.gridcoordspositive")), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridcoordspositive")), false);
         }
     }
 
     @Override
-    public void registerCommands(CommandDispatcher<CommandSource> cd) {
+    public void registerCommands(CommandDispatcher<CottonClientCommandSource> cd) {
         cd.register(
             literal("grid")
                 .then(
@@ -446,10 +447,9 @@ public class Grid implements ClientModInitializer, KeyBindingHandler, ClientComm
             gridSpawns=FabricKeyBinding.Builder
                 .create(new Identifier("grid:spawns"), InputUtil.Type.KEYSYM, GLFW_KEY_L, category)
                 .build());
-        KeyBindingManager.register(this);
+        ClientTickCallback.EVENT.register(e->processKeyBinds());
     }
 
-    @Override
     public void processKeyBinds() {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (showHide.wasPressed()) {

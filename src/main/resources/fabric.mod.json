@@ -5,7 +5,6 @@
     "environment": "client",
     "entrypoints": {
         "client": [ "de.guntram.mcmod.grid.Grid" ],
-        "NOTYETmodmenu": [ "de.guntram.mcmod.grid.MMConfigurationHandler" ],
         "cotton-client-commands": ["de.guntram.mcmod.grid.Grid"]
     },
     "custom": {
