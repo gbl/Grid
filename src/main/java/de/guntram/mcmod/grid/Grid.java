@@ -4,14 +4,20 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
+import static com.mojang.brigadier.arguments.StringArgumentType.getString;
+import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.argument;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.literal;
 import io.github.cottonmc.clientcommands.ClientCommandPlugin;
 import io.github.cottonmc.clientcommands.CottonClientCommandSource;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.FabricKeyBinding;
 import net.fabricmc.fabric.api.client.keybinding.KeyBindingRegistry;
 import net.fabricmc.fabric.api.event.client.ClientTickCallback;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
@@ -46,10 +52,11 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     private int offsetZ=0;
     private int distance=30;
     private int lightLevel=8;
-    private boolean visible=false;
+    private boolean showGrid=false;
     private boolean isBlocks=true;
     private boolean isCircles=false;
     private boolean showSpawns=false;
+    private Pattern showBiomes=null;
 
     FabricKeyBinding showHide, gridHere, gridFixY, gridSpawns;
     
@@ -63,13 +70,13 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     }
     
     public void renderOverlay(float partialTicks) {
-        if (!visible && !showSpawns)
+        if (!showGrid && !showSpawns && showBiomes == null)
             return;
 
-        Entity entityplayer = MinecraftClient.getInstance().getCameraEntity();
-        double cameraX = entityplayer.prevRenderX + (entityplayer.x - entityplayer.prevRenderX) * (double)partialTicks;
-        double cameraY = entityplayer.prevRenderY + (entityplayer.y - entityplayer.prevRenderY) * (double)partialTicks + entityplayer.getEyeHeight(entityplayer.getPose());
-        double cameraZ = entityplayer.prevRenderZ + (entityplayer.z - entityplayer.prevRenderZ) * (double)partialTicks;        
+        Entity player = MinecraftClient.getInstance().getCameraEntity();
+        double cameraX = player.prevRenderX + (player.x - player.prevRenderX) * (double)partialTicks;
+        double cameraY = player.prevRenderY + (player.y - player.prevRenderY) * (double)partialTicks + player.getEyeHeight(player.getPose());
+        double cameraZ = player.prevRenderZ + (player.z - player.prevRenderZ) * (double)partialTicks;        
 
         GlStateManager.disableTexture();
         GlStateManager.disableBlend();
@@ -80,8 +87,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         bufferBuilder.setOffset(-cameraX, -cameraY, -cameraZ);
         bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
         
-        int playerX=(int) Math.floor(entityplayer.x);
-        int playerZ=(int) Math.floor(entityplayer.z);
+        int playerX=(int) Math.floor(player.x);
+        int playerZ=(int) Math.floor(player.z);
         int playerXShift=Math.floorMod(playerX, gridX);
         int playerZShift=Math.floorMod(playerZ, gridZ);
         int baseX=playerX-playerXShift;
@@ -96,9 +103,9 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             lastDumpTime=thisDumpTime;
         }
         
-        if (visible) {
-            float y=((float)(fixY==-1 ? entityplayer.y : fixY));
-            if (entityplayer.y+entityplayer.getEyeHeight(entityplayer.getPose()) > y) {
+        if (showGrid) {
+            float y=((float)(fixY==-1 ? player.y : fixY));
+            if (player.y+player.getEyeHeight(player.getPose()) > y) {
                 y+=0.05f;
             } else {
                 y-=0.05f;
@@ -173,26 +180,11 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         }
         
         if (showSpawns) {
-            int miny=(int)(entityplayer.y)-16;
-            int maxy=(int)(entityplayer.y)+2;
-            if (miny<0) { miny=0; }
-            if (maxy>255) { maxy=255; }
-            for (int x=baseX-distance; x<=baseX+distance; x++) {
-                for (int z=baseZ-distance; z<=baseZ+distance; z++) {
-                    for (int y=miny; y<=maxy; y++) {
-                        BlockPos pos=new BlockPos(x, y, z);
-                        int spawnmode;
-                        if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, entityplayer.world, pos, EntityType.COD)) {
-                            if (entityplayer.world.getLightLevel(LightType.BLOCK, pos)>=lightLevel)
-                                continue;
-                            else if (entityplayer.world.getLightLevel(LightType.SKY, pos)>=lightLevel)
-                                cross(bufferBuilder, x, y, z, 1.0f, 1.0f, 0.0f );
-                            else
-                                cross(bufferBuilder, x, y, z, 1.0f, 0.0f, 0.0f );
-                        }
-                    }
-                }
-            }
+            showSpawns(bufferBuilder, player, baseX, baseZ);
+        }
+        
+        if (showBiomes!=null) {
+            showBiomes(bufferBuilder, player, baseX, baseZ);
         }
         
         tessellator.draw();
@@ -201,6 +193,51 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         GlStateManager.lineWidth(1.0f);
         GlStateManager.enableBlend();
         GlStateManager.enableTexture();
+    }
+    
+    private void showSpawns(BufferBuilder bufferBuilder, Entity player, int baseX, int baseZ) {
+        int miny=(int)(player.y)-16;
+        int maxy=(int)(player.y)+2;
+        if (miny<0) { miny=0; }
+        if (maxy>255) { maxy=255; }
+        for (int x=baseX-distance; x<=baseX+distance; x++) {
+            for (int z=baseZ-distance; z<=baseZ+distance; z++) {
+                for (int y=miny; y<=maxy; y++) {
+                    BlockPos pos=new BlockPos(x, y, z);
+                    int spawnmode;
+                    if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, pos, EntityType.COD)) {
+                        if (player.world.getLightLevel(LightType.BLOCK, pos)>=lightLevel)
+                            continue;
+                        else if (player.world.getLightLevel(LightType.SKY, pos)>=lightLevel)
+                            cross(bufferBuilder, x, y, z, 1.0f, 1.0f, 0.0f, false );
+                        else
+                            cross(bufferBuilder, x, y, z, 1.0f, 0.0f, 0.0f, true );
+                    }
+                }
+            }
+        }
+    }
+    
+    private void showBiomes(BufferBuilder bufferBuilder, Entity player, int baseX, int baseZ) {
+        int miny=(int)(player.y)-16;
+        int maxy=(int)(player.y);
+        if (miny<0) { miny=0; }
+        if (maxy>255) { maxy=255; }
+        for (int x=baseX-distance; x<=baseX+distance; x++) {
+            for (int z=baseZ-distance; z<=baseZ+distance; z++) {
+                if (showBiomes.matcher(player.world.getBiome(new BlockPos(x, 1, z)).getName().asFormattedString()).find()) {
+                    int y=(int)(player.y);
+                    while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
+                        y--;
+                    }
+                    diamond(bufferBuilder, x, y+1, z, 1.0f, 0.0f, 1.0f);
+                }
+            }
+        }
+    }
+    
+    static private boolean isAir(Block block) {
+        return block == Blocks.AIR || block == Blocks.CAVE_AIR || block == Blocks.VOID_AIR;
     }
     
     private void circleSegment(BufferBuilder b, float xc, float x1, float x2, float y, float zc, float z1, float z2, float red, float green, float blue) {
@@ -224,20 +261,36 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         b.vertex(x2+offsetX, y2, z2+offsetZ).color(red, green, blue, 0.0f).next();
     }
     
-    private void cross(BufferBuilder b, int x, int y, int z, float red, float green, float blue) {
+    private void cross(BufferBuilder b, int x, int y, int z, float red, float green, float blue, boolean twoLegs) {
         b.vertex(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).next();
         b.vertex(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
         b.vertex(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
         b.vertex(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).next();
+        if (twoLegs) {
+            b.vertex(x+0.3f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).next();
+            b.vertex(x+0.3f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
+            b.vertex(x+0.7f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
+            b.vertex(x+0.7f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).next();
+        }
+    }
+    
+    private void diamond(BufferBuilder b, int x, int y, int z, float red, float green, float blue) {
+        b.vertex(x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 0.0f).next();
+        b.vertex(x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
+        b.vertex(x+0.5f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
+        b.vertex(x+0.7f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
+        b.vertex(x+0.5f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
+        b.vertex(x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
+        b.vertex(x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 0.0f).next();
     }
     
     private void cmdShow(ClientPlayerEntity sender) {
-        visible = true;
+        showGrid = true;
         sender.addChatMessage(new LiteralText(I18n.translate("msg.gridshown", (Object[]) null)), false);
     }
     
     private void cmdHide(ClientPlayerEntity sender) {
-        visible = false;
+        showGrid = false;
         sender.addChatMessage(new LiteralText(I18n.translate("msg.gridhidden", (Object[]) null)), false);
     }
     
@@ -262,12 +315,12 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     }
     
     private void cmdLines(ClientPlayerEntity sender) {
-        visible = true; isBlocks = false;
+        showGrid = true; isBlocks = false;
         sender.addChatMessage(new LiteralText(I18n.translate("msg.gridlines", (Object[]) null)), false);
     }
     
     private void cmdBlocks(ClientPlayerEntity sender) {
-        visible = true; isBlocks = true;
+        showGrid = true; isBlocks = true;
         sender.addChatMessage(new LiteralText(I18n.translate("msg.gridblocks", (Object[]) null)), false);
     }
     
@@ -277,7 +330,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             sender.addChatMessage(new LiteralText(I18n.translate("msg.gridnomorecircles", (Object[]) null)), false);
         } else {
             isCircles = true;
-            visible = true;
+            showGrid = true;
             sender.addChatMessage(new LiteralText(I18n.translate("msg.gridcircles", (Object[]) null)), false);
         }
     }
@@ -289,7 +342,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         int playerZShift=Math.floorMod(playerZ, gridZ);                
         offsetX=playerXShift;
         offsetZ=playerZShift;
-        visible=true;
+        showGrid=true;
         sender.addChatMessage(new LiteralText(I18n.translate("msg.gridaligned", (Object[]) null)), false);
     }
     
@@ -310,7 +363,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     private void cmdChunks(ClientPlayerEntity sender) {
         offsetX=offsetZ=0;
         gridX=gridZ=16;
-        visible=true;
+        showGrid=true;
         sender.addChatMessage(new LiteralText(I18n.translate("msg.gridchunks")), false);
     }
     
@@ -331,10 +384,25 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         if (newX>0 && newZ>0) {
             gridX=newX;
             gridZ=newZ;
-            visible=true;
+            showGrid=true;
         	sender.addChatMessage(new LiteralText(I18n.translate("msg.gridpattern", gridX, gridZ)), false);
         } else {
             sender.addChatMessage(new LiteralText(I18n.translate("msg.gridcoordspositive")), false);
+        }
+    }
+    
+    private void cmdBiome(ClientPlayerEntity sender, String biome) {
+        if (biome == null  || biome.isEmpty()) {
+            showBiomes = null;
+        } else {
+            try {
+                this.showBiomes=Pattern.compile(biome, Pattern.CASE_INSENSITIVE);
+                sender.addChatMessage(new LiteralText(I18n.translate("msg.biomesearching", biome)), false);
+            } catch (PatternSyntaxException ex) {
+                showBiomes = null;
+                sender.addChatMessage(new LiteralText(I18n.translate("msg.biomepatternbad", biome)), false);
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -425,6 +493,17 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                         return 1;
                     })
                 )
+                .then(
+                    literal("biome").then(
+					    argument("pattern", string()).executes(c->{
+							instance.cmdBiome(MinecraftClient.getInstance().player, ""+getString(c, "pattern"));
+                            return 1;
+						})
+					).executes(c->{
+                        instance.cmdBiome(MinecraftClient.getInstance().player, null);
+                        return 1;
+                    })
+                )
         );
     }
 
@@ -453,7 +532,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     public void processKeyBinds() {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (showHide.wasPressed()) {
-            visible=!visible;
+            showGrid=!showGrid;
         }
         if (gridFixY.wasPressed()) {
             cmdFixy(player);
