@@ -1,6 +1,7 @@
 package de.guntram.mcmod.grid;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
@@ -26,6 +27,7 @@ import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.world.SpawnHelper;
 import net.minecraft.entity.SpawnRestriction;
@@ -69,26 +71,30 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         setKeyBindings();
     }
     
-    public void renderOverlay(float partialTicks) {
+    public void renderOverlay(float partialTicks, MatrixStack matrices) {
         if (!showGrid && !showSpawns && showBiomes == null)
             return;
 
+        RenderSystem.pushMatrix();
+        RenderSystem.multMatrix(matrices.peek().getModel());
         Entity player = MinecraftClient.getInstance().getCameraEntity();
-        double cameraX = player.prevRenderX + (player.x - player.prevRenderX) * (double)partialTicks;
-        double cameraY = player.prevRenderY + (player.y - player.prevRenderY) * (double)partialTicks + player.getEyeHeight(player.getPose());
-        double cameraZ = player.prevRenderZ + (player.z - player.prevRenderZ) * (double)partialTicks;        
+        double cameraX = player.lastRenderX + (player.getX() - player.lastRenderX) * (double)partialTicks;
+        double cameraY = player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks + player.getEyeHeight(player.getPose());
+        double cameraZ = player.lastRenderZ + (player.getZ() - player.lastRenderZ) * (double)partialTicks;        
 
-        GlStateManager.disableTexture();
-        GlStateManager.disableBlend();
-        GlStateManager.lineWidth(1.0f);
+        RenderSystem.disableTexture();
+        RenderSystem.disableBlend();
+        RenderSystem.lineWidth(1.0f);
+        RenderSystem.enableAlphaTest();
 
         Tessellator tessellator=Tessellator.getInstance();
-        BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
-        bufferBuilder.setOffset(-cameraX, -cameraY, -cameraZ);
+        BufferBuilder bufferBuilder = tessellator.getBuffer();
+        // bufferBuilder.setOffset(-cameraX, -cameraY, -cameraZ);
+        RenderSystem.translated(-cameraX, -cameraY, -cameraZ);
         bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
         
-        int playerX=(int) Math.floor(player.x);
-        int playerZ=(int) Math.floor(player.z);
+        int playerX=(int) Math.floor(player.getX());
+        int playerZ=(int) Math.floor(player.getZ());
         int playerXShift=Math.floorMod(playerX, gridX);
         int playerZShift=Math.floorMod(playerZ, gridZ);
         int baseX=playerX-playerXShift;
@@ -104,8 +110,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         }
         
         if (showGrid) {
-            float y=((float)(fixY==-1 ? player.y : fixY));
-            if (player.y+player.getEyeHeight(player.getPose()) > y) {
+            float y=((float)(fixY==-1 ? player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks : fixY));
+            if (player.getY()+player.getEyeHeight(player.getPose()) > y) {
                 y+=0.05f;
             } else {
                 y-=0.05f;
@@ -188,16 +194,18 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         }
         
         tessellator.draw();
-        bufferBuilder.setOffset(0, 0, 0);
+        // bufferBuilder.setOffset(0, 0, 0);
+        RenderSystem.translated(0, 0, 0);
         
-        GlStateManager.lineWidth(1.0f);
-        GlStateManager.enableBlend();
-        GlStateManager.enableTexture();
+        RenderSystem.lineWidth(1.0f);
+        RenderSystem.enableBlend();
+        RenderSystem.enableTexture();
+        RenderSystem.popMatrix();
     }
     
     private void showSpawns(BufferBuilder bufferBuilder, Entity player, int baseX, int baseZ) {
-        int miny=(int)(player.y)-16;
-        int maxy=(int)(player.y)+2;
+        int miny=(int)(player.getY())-16;
+        int maxy=(int)(player.getY())+2;
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
         for (int x=baseX-distance; x<=baseX+distance; x++) {
@@ -219,14 +227,14 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     }
     
     private void showBiomes(BufferBuilder bufferBuilder, Entity player, int baseX, int baseZ) {
-        int miny=(int)(player.y)-16;
-        int maxy=(int)(player.y);
+        int miny=(int)(player.getY())-16;
+        int maxy=(int)(player.getY());
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
                 if (showBiomes.matcher(player.world.getBiome(new BlockPos(x, 1, z)).getName().asFormattedString()).find()) {
-                    int y=(int)(player.y);
+                    int y=(int)(player.getY());
                     while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
                         y--;
                     }
@@ -336,8 +344,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     }
     
     private void cmdHere(ClientPlayerEntity sender) {
-        int playerX=(int) Math.floor(sender.x);
-        int playerZ=(int) Math.floor(sender.z);
+        int playerX=(int) Math.floor(sender.getX());
+        int playerZ=(int) Math.floor(sender.getZ());
         int playerXShift=Math.floorMod(playerX, gridX);
         int playerZShift=Math.floorMod(playerZ, gridZ);                
         offsetX=playerXShift;
@@ -348,7 +356,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     
     private void cmdFixy(ClientPlayerEntity sender) {
         if (fixY==-1) {
-            cmdFixy(sender, (int)Math.floor(sender.y));
+            cmdFixy(sender, (int)Math.floor(sender.getY()));
         } else {
             fixY=-1;
             sender.addChatMessage(new LiteralText(I18n.translate("msg.gridheightfloat")), false);
