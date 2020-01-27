@@ -422,7 +422,6 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             } catch (PatternSyntaxException ex) {
                 showBiomes = null;
                 sender.addChatMessage(new LiteralText(I18n.translate("msg.biomepatternbad", biome)), false);
-                ex.printStackTrace();
             }
         }
     }

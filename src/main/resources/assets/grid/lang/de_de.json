@@ -21,5 +21,7 @@
     "msg.griddistusage": "Gitterdistanz ist %d Blöcke.",
     "msg.badnumber": "Parameter sind keine ganzen Zahlen.",
     "msg.spawnsshown": "Spawnblöcke angezeigt (Licht < %d)",
-    "msg.spawnshidden": "Spawnblöcke versteckt"
+    "msg.spawnshidden": "Spawnblöcke versteckt",
+    "msg.biomesearching": "Markiere Biome %s",
+    "msg.biomepatternbad": "'%s' ist keine gültige Suche"
 }

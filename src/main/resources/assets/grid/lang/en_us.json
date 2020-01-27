@@ -21,5 +21,7 @@
     "msg.griddistusage": "Grid distance is %d blocks.",
     "msg.badnumber": "Parameters not recognized as integers.",
     "msg.spawnsshown": "Mob spawn locations shown (light level < %d)",
-    "msg.spawnshidden": "Mob spawn locations hidden"
+    "msg.spawnshidden": "Mob spawn locations hidden",
+    "msg.biomesearching": "Marking biome %s",
+    "msg.biomepatternbad": "'%s' ist not a valid search pattern"
 }

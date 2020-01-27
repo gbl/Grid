@@ -21,5 +21,7 @@
     "msg.griddistusage":"A distância da grade é de %d blocos.",
     "msg.badnumber":"Parâmetros não reconhecidos como números inteiros.",
     "msg.spawnsshown":"Locais de spawn de monstros exibidos (Nível de luz < %d)",
-    "msg.spawnshidden":"Locais de spawn de monstros ocultados"
+    "msg.spawnshidden":"Locais de spawn de monstros ocultados",
+    "msg.biomesearching": "Marcação do bioma %s",
+    "msg.biomepatternbad": "'%s' não é um padrão de busca válido"    
 }
