@@ -35,6 +35,8 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LightType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_B;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_C;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_L;
@@ -59,6 +61,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     private boolean isCircles=false;
     private boolean showSpawns=false;
     private Pattern showBiomes=null;
+    private Logger LOGGER;
 
     FabricKeyBinding showHide, gridHere, gridFixY, gridSpawns;
     
@@ -69,6 +72,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     public void onInitializeClient() {
         instance=this;
         setKeyBindings();
+        LOGGER = LogManager.getLogger(MODNAME);
     }
     
     public void renderOverlay(float partialTicks, MatrixStack matrices) {
@@ -86,6 +90,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         RenderSystem.disableBlend();
         RenderSystem.lineWidth(1.0f);
         RenderSystem.enableAlphaTest();
+        RenderSystem.enableDepthTest();
 
         Tessellator tessellator=Tessellator.getInstance();
         BufferBuilder bufferBuilder = tessellator.getBuffer();
@@ -110,12 +115,15 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         }
         
         if (showGrid) {
-            float y=((float)(fixY==-1 ? player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks : fixY));
-            if (player.getY()+player.getEyeHeight(player.getPose()) > y) {
-                y+=0.05f;
+            float tempy=((float)(fixY==-1 ? player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks : fixY));
+            final float y;
+            if (player.getY()+player.getEyeHeight(player.getPose()) > tempy) {
+                y=tempy+0.05f;
             } else {
-                y-=0.05f;
+                y=tempy-0.05f;
             }
+            
+            LOGGER.debug(() -> { return "camera: "+cameraX+" "+cameraY+" "+cameraZ+", y="+y; });
                 
             int circRadSquare=(gridX/2)*(gridX/2);
             if (isBlocks) {
@@ -194,7 +202,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         }
         
         tessellator.draw();
-        // bufferBuilder.setOffset(0, 0, 0);
+
         RenderSystem.translated(0, 0, 0);
         
         RenderSystem.lineWidth(1.0f);
@@ -234,9 +242,14 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
                 if (showBiomes.matcher(player.world.getBiome(new BlockPos(x, 1, z)).getName().asFormattedString()).find()) {
-                    int y=(int)(player.getY());
-                    while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
-                        y--;
+                    int y;
+                    if (fixY == -1) {
+                        y=(int)(player.getY());
+                        while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
+                            y--;
+                        }
+                    } else {
+                        y=fixY-1;
                     }
                     diamond(bufferBuilder, x, y+1, z, 1.0f, 0.0f, 1.0f);
                 }
