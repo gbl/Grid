@@ -227,9 +227,9 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                         if (player.world.getLightLevel(LightType.BLOCK, pos)>=lightLevel)
                             continue;
                         else if (player.world.getLightLevel(LightType.SKY, pos)>=lightLevel)
-                            drawCross(bufferBuilder, stack, x, y, z, spawnNightColor.getRed()/255f, spawnNightColor.getGreen()/255f, spawnNightColor.getBlue()/255f, false );
+                            drawCross(bufferBuilder, stack, x, y+0.05f, z, spawnNightColor.getRed()/255f, spawnNightColor.getGreen()/255f, spawnNightColor.getBlue()/255f, false );
                         else
-                            drawCross(bufferBuilder, stack, x, y, z, spawnDayColor.getRed()/255f, spawnDayColor.getGreen()/255f, spawnDayColor.getBlue()/255f, true );
+                            drawCross(bufferBuilder, stack, x, y+0.05f, z, spawnDayColor.getRed()/255f, spawnDayColor.getGreen()/255f, spawnDayColor.getBlue()/255f, true );
                     }
                 }
             }
@@ -301,17 +301,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         b.vertex(model, x2, y2, z2).color(red, green, blue, 0.0f).next();
     }
     
-    private void drawCross(BufferBuilder b, MatrixStack stack, int x, int y, int z, float red, float green, float blue, boolean twoLegs) {
-        Matrix4f model = stack.peek().getModel();
-        b.vertex(model, x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).next();
-        b.vertex(model, x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
-        b.vertex(model, x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
-        b.vertex(model, x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).next();
+    private void drawCross(BufferBuilder b, MatrixStack stack, float x, float y, float z, float red, float green, float blue, boolean twoLegs) {
+        drawLine(b, stack, x+0.3f, x+0.7f, y, y, z+0.3f, z+0.7f, red, green, blue);
         if (twoLegs) {
-            b.vertex(model, x+0.3f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).next();
-            b.vertex(model, x+0.3f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
-            b.vertex(model, x+0.7f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
-            b.vertex(model, x+0.7f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).next();
+            drawLine(b, stack, x+0.3f, x+0.7f, y, y, z+0.7f, z+0.3f, red, green, blue);
         }
     }
     
