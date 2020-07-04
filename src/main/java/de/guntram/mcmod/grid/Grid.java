@@ -33,6 +33,7 @@ import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Matrix4f;
 import net.minecraft.world.LightType;
 import net.minecraft.world.SpawnHelper;
 import org.apache.logging.log4j.LogManager;
@@ -75,16 +76,16 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         LOGGER = LogManager.getLogger(MODNAME);
     }
     
-    public void renderOverlay(float partialTicks, MatrixStack matrices) {
+    public void renderOverlay(float partialTicks, MatrixStack stack) {
         if (!showGrid && !showSpawns && showBiomes == null)
             return;
 
-        RenderSystem.pushMatrix();
-        RenderSystem.multMatrix(matrices.peek().getModel());
         Entity player = MinecraftClient.getInstance().getCameraEntity();
         double cameraX = player.lastRenderX + (player.getX() - player.lastRenderX) * (double)partialTicks;
         double cameraY = player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks + player.getEyeHeight(player.getPose());
         double cameraZ = player.lastRenderZ + (player.getZ() - player.lastRenderZ) * (double)partialTicks;        
+        stack.push();
+        stack.translate(-cameraX, -cameraY, -cameraZ);
 
         RenderSystem.disableTexture();
         RenderSystem.disableBlend();
@@ -94,8 +95,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
 
         Tessellator tessellator=Tessellator.getInstance();
         BufferBuilder bufferBuilder = tessellator.getBuffer();
-        // bufferBuilder.setOffset(-cameraX, -cameraY, -cameraZ);
-        RenderSystem.translated(-cameraX, -cameraY, -cameraZ);
+
+        
         bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
         
         int playerX=(int) Math.floor(player.getX());
@@ -194,24 +195,25 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         }
         
         if (showSpawns) {
-            showSpawns(bufferBuilder, player, baseX, baseZ);
+            showSpawns(bufferBuilder, stack, player, baseX, baseZ);
         }
         
         if (showBiomes!=null) {
-            showBiomes(bufferBuilder, player, baseX, baseZ);
+            showBiomes(bufferBuilder, stack, player, baseX, baseZ);
         }
         
         tessellator.draw();
 
-        RenderSystem.translated(0, 0, 0);
+        stack.pop();
+//        RenderSystem.translated(0, 0, 0);
         
         RenderSystem.lineWidth(1.0f);
         RenderSystem.enableBlend();
         RenderSystem.enableTexture();
-        RenderSystem.popMatrix();
+//        RenderSystem.popMatrix();
     }
     
-    private void showSpawns(BufferBuilder bufferBuilder, Entity player, int baseX, int baseZ) {
+    private void showSpawns(BufferBuilder bufferBuilder, MatrixStack stack, Entity player, int baseX, int baseZ) {
         int miny=(int)(player.getY())-16;
         int maxy=(int)(player.getY())+2;
         if (miny<0) { miny=0; }
@@ -225,16 +227,16 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                         if (player.world.getLightLevel(LightType.BLOCK, pos)>=lightLevel)
                             continue;
                         else if (player.world.getLightLevel(LightType.SKY, pos)>=lightLevel)
-                            cross(bufferBuilder, x, y, z, 1.0f, 1.0f, 0.0f, false );
+                            cross(bufferBuilder, stack, x, y, z, 1.0f, 1.0f, 0.0f, false );
                         else
-                            cross(bufferBuilder, x, y, z, 1.0f, 0.0f, 0.0f, true );
+                            cross(bufferBuilder, stack, x, y, z, 1.0f, 0.0f, 0.0f, true );
                     }
                 }
             }
         }
     }
     
-    private void showBiomes(BufferBuilder bufferBuilder, Entity player, int baseX, int baseZ) {
+    private void showBiomes(BufferBuilder bufferBuilder, MatrixStack stack, Entity player, int baseX, int baseZ) {
         int miny=(int)(player.getY())-16;
         int maxy=(int)(player.getY());
         if (miny<0) { miny=0; }
@@ -251,7 +253,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                     } else {
                         y=fixY-1;
                     }
-                    diamond(bufferBuilder, x, y+1, z, 1.0f, 0.0f, 1.0f);
+                    diamond(bufferBuilder, stack, x, y+1, z, 1.0f, 0.0f, 1.0f);
                 }
             }
         }
@@ -282,27 +284,29 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         b.vertex(x2+offsetX, y2, z2+offsetZ).color(red, green, blue, 0.0f).next();
     }
     
-    private void cross(BufferBuilder b, int x, int y, int z, float red, float green, float blue, boolean twoLegs) {
-        b.vertex(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).next();
-        b.vertex(x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
-        b.vertex(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
-        b.vertex(x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).next();
+    private void cross(BufferBuilder b, MatrixStack stack, int x, int y, int z, float red, float green, float blue, boolean twoLegs) {
+        Matrix4f model = stack.peek().getModel();
+        b.vertex(model, x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).next();
+        b.vertex(model, x+0.3f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
+        b.vertex(model, x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
+        b.vertex(model, x+0.7f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).next();
         if (twoLegs) {
-            b.vertex(x+0.3f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).next();
-            b.vertex(x+0.3f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
-            b.vertex(x+0.7f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
-            b.vertex(x+0.7f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).next();
+            b.vertex(model, x+0.3f, y+0.05f, z+0.7f).color(red, green, blue, 0.0f).next();
+            b.vertex(model, x+0.3f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
+            b.vertex(model, x+0.7f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
+            b.vertex(model, x+0.7f, y+0.05f, z+0.3f).color(red, green, blue, 0.0f).next();
         }
     }
     
-    private void diamond(BufferBuilder b, int x, int y, int z, float red, float green, float blue) {
-        b.vertex(x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 0.0f).next();
-        b.vertex(x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
-        b.vertex(x+0.5f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
-        b.vertex(x+0.7f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
-        b.vertex(x+0.5f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
-        b.vertex(x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
-        b.vertex(x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 0.0f).next();
+    private void diamond(BufferBuilder b, MatrixStack stack, int x, int y, int z, float red, float green, float blue) {
+        Matrix4f model = stack.peek().getModel();
+        b.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 0.0f).next();
+        b.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
+        b.vertex(model, x+0.5f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
+        b.vertex(model, x+0.7f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
+        b.vertex(model, x+0.5f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
+        b.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
+        b.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 0.0f).next();
     }
     
     private void cmdShow(ClientPlayerEntity sender) {
