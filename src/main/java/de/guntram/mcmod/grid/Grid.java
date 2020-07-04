@@ -119,7 +119,13 @@ public class Grid implements ICommand
         }
         
         if (visible) {
-            float y=((float)(fixY==-1 ? entityplayer.posY : fixY)+0.05f);
+            float y=((float)(fixY==-1 ? entityplayer.posY : fixY));
+            if (entityplayer.posY+entityplayer.getEyeHeight() > y) {
+                y+=0.05f;
+            } else {
+                y-=0.05f;
+            }
+                
             int circRadSquare=(gridX/2)*(gridX/2);
             if (isBlocks) {
                 GlStateManager.glLineWidth(3.0f);
@@ -311,12 +317,16 @@ public class Grid implements ICommand
     
     private void cmdFixy(EntityPlayerSP sender) {
         if (fixY==-1) {
-            fixY=(int) Math.floor(sender.posY);
-            sender.sendMessage(new TextComponentString(I18n.format("msg.gridheightfixed", fixY)));
+            cmdFixy(sender, (int)Math.floor(sender.posY));
         } else {
             fixY=-1;
             sender.sendMessage(new TextComponentString(I18n.format("msg.gridheightfloat")));
         }
+    }
+
+    private void cmdFixy(EntityPlayerSP sender, int level) {
+            fixY=level;
+            sender.sendMessage(new TextComponentString(I18n.format("msg.gridheightfixed", fixY)));
     }
     
     private void cmdChunks(EntityPlayerSP sender) {
@@ -384,7 +394,11 @@ public class Grid implements ICommand
             } else if (args[0].equals("here")) {
                 cmdHere(player);
             } else if (args[0].equals("fixy")) {
-                cmdFixy(player);
+                if (args.length == 2) {
+                    cmdFixy(player, Integer.parseInt(args[1]));
+                } else {
+                    cmdFixy(player);
+                }
             } else if (args[0].equals("chunk") || args[0].equals("chunks")) {
                 cmdChunks(player);
             } else if (args[0].equals("spawns")) {

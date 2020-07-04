@@ -3,3 +3,4 @@ gradle
 .gradle
 .nb-gradle
 gradlew
+.nb-gradle-properties
