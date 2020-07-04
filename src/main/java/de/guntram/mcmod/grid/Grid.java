@@ -129,6 +129,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             }
                 
             RenderSystem.lineWidth(3.0f);
+            stack.push();
+            stack.translate(offsetX, 0, offsetZ);
             bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
             int circRadSquare=(gridX/2)*(gridX/2);
             if (isBlocks) {
@@ -188,6 +190,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                 }
             }
             tessellator.draw();
+            stack.pop();
         }
         
         if (showSpawns) {
@@ -292,10 +295,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             System.out.println("line from "+x1+","+y1+","+z1+" to "+x2+","+y2+","+z2);
         }
         Matrix4f model = stack.peek().getModel();
-        b.vertex(model, x1+offsetX, y1, z1+offsetZ).color(red, green, blue, 0.0f).next();
-        b.vertex(model, x1+offsetX, y1, z1+offsetZ).color(red, green, blue, 1.0f).next();
-        b.vertex(model, x2+offsetX, y2, z2+offsetZ).color(red, green, blue, 1.0f).next();
-        b.vertex(model, x2+offsetX, y2, z2+offsetZ).color(red, green, blue, 0.0f).next();
+        b.vertex(model, x1, y1, z1).color(red, green, blue, 0.0f).next();
+        b.vertex(model, x1, y1, z1).color(red, green, blue, 1.0f).next();
+        b.vertex(model, x2, y2, z2).color(red, green, blue, 1.0f).next();
+        b.vertex(model, x2, y2, z2).color(red, green, blue, 0.0f).next();
     }
     
     private void drawCross(BufferBuilder b, MatrixStack stack, int x, int y, int z, float red, float green, float blue, boolean twoLegs) {
