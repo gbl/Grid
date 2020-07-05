@@ -15,25 +15,26 @@ import java.awt.Color;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keybinding.FabricKeyBinding;
+import net.fabricmc.fabric.api.client.keybinding.KeyBindingRegistry;
 import net.fabricmc.fabric.api.event.client.ClientTickCallback;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.text.LiteralText;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Matrix4f;
 import net.minecraft.world.LightType;
 import net.minecraft.world.SpawnHelper;
 import org.apache.logging.log4j.LogManager;
@@ -75,7 +76,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     private Color spawnDayColor = new Color(0xff0000);
     private Color biomeColor = new Color(0xff00ff);
 
-    KeyBinding showHide, gridHere, gridFixY, gridSpawns;
+    FabricKeyBinding showHide, gridHere, gridFixY, gridSpawns;
     
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
@@ -275,7 +276,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                 for (int y=miny; y<=maxy; y++) {
                     BlockPos pos=new BlockPos(x, y, z);
                     int spawnmode;
-                    if (fastSpawnCheck && player.world.getBlockState(pos.down()).isSolidBlock(player.world, pos.down())
+                    if (fastSpawnCheck && player.world.getBlockState(pos.down()).isFullCube(player.world, pos.down())
                     ||  !fastSpawnCheck && SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, pos, EntityType.COD)) {
                         if (player.world.getLightLevel(LightType.BLOCK, pos)>=lightLevel)
                             continue;
@@ -389,12 +390,12 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     
     private void cmdShow(ClientPlayerEntity sender) {
         showGrid = true;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridshown", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridshown", (Object[]) null)), false);
     }
     
     private void cmdHide(ClientPlayerEntity sender) {
         showGrid = false;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridhidden", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridhidden", (Object[]) null)), false);
     }
     
     private void cmdSpawns(ClientPlayerEntity sender, String newLevel) {
@@ -409,33 +410,33 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         this.lightLevel=level;
         if (showSpawns && newLevel==null) {
 
-            sender.sendMessage(new LiteralText(I18n.translate("msg.spawnshidden")), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.spawnshidden")), false);
             showSpawns=false;
         } else {
-            sender.sendMessage(new LiteralText(I18n.translate("msg.spawnsshown", level)), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.spawnsshown", level)), false);
             showSpawns=true;
         }
     }
     
     private void cmdLines(ClientPlayerEntity sender) {
         showGrid = true; isBlocks = false;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridlines", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridlines", (Object[]) null)), false);
     }
     
     private void cmdBlocks(ClientPlayerEntity sender) {
         showGrid = true; isBlocks = true;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridblocks", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridblocks", (Object[]) null)), false);
     }
     
     private void cmdCircles(ClientPlayerEntity sender) {
         if (isCircles) {
             isCircles = false;
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridnomorecircles", (Object[]) null)), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridnomorecircles", (Object[]) null)), false);
         } else {
             isCircles = true;
             isHexes = false;
             showGrid = true;
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridcircles", (Object[]) null)), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridcircles", (Object[]) null)), false);
         }
     }
     
@@ -447,7 +448,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         offsetX=playerXShift;
         offsetZ=playerZShift;
         showGrid=true;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridaligned", (Object[]) null)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridaligned", (Object[]) null)), false);
     }
     
     private void cmdHex(ClientPlayerEntity sender) {
@@ -465,25 +466,25 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             cmdFixy(sender, (int)Math.floor(sender.getY()));
         } else {
             fixY=-1;
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridheightfloat")), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridheightfloat")), false);
         }
     }
 
     private void cmdFixy(ClientPlayerEntity sender, int level) {
             fixY=level;
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridheightfixed", fixY)), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridheightfixed", fixY)), false);
     }
     
     private void cmdChunks(ClientPlayerEntity sender) {
         offsetX=offsetZ=0;
         gridX=gridZ=16;
         showGrid=true;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridchunks")), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.gridchunks")), false);
     }
     
     private void cmdDistance(ClientPlayerEntity sender, int distance) {
         this.distance=distance;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.griddistance", distance)), false);
+        sender.addChatMessage(new LiteralText(I18n.translate("msg.griddistance", distance)), false);
     }
     
     private void cmdX(ClientPlayerEntity sender, int coord) {
@@ -499,9 +500,9 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             gridX=newX;
             gridZ=newZ;
             showGrid=true;
-        	sender.sendMessage(new LiteralText(I18n.translate("msg.gridpattern", gridX, gridZ)), false);
+        	sender.addChatMessage(new LiteralText(I18n.translate("msg.gridpattern", gridX, gridZ)), false);
         } else {
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridcoordspositive")), false);
+            sender.addChatMessage(new LiteralText(I18n.translate("msg.gridcoordspositive")), false);
         }
     }
     
@@ -511,10 +512,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         } else {
             try {
                 this.showBiomes=Pattern.compile(biome, Pattern.CASE_INSENSITIVE);
-                sender.sendMessage(new LiteralText(I18n.translate("msg.biomesearching", biome)), false);
+                sender.addChatMessage(new LiteralText(I18n.translate("msg.biomesearching", biome)), false);
             } catch (PatternSyntaxException ex) {
                 showBiomes = null;
-                sender.sendMessage(new LiteralText(I18n.translate("msg.biomepatternbad", biome)), false);
+                sender.addChatMessage(new LiteralText(I18n.translate("msg.biomepatternbad", biome)), false);
             }
         }
     }
@@ -628,10 +629,24 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
 
     public void setKeyBindings() {
         final String category="key.categories.grid";
-        KeyBindingHelper.registerKeyBinding(showHide = new KeyBinding("grid:showhide", InputUtil.Type.KEYSYM, GLFW_KEY_B, category));
-        KeyBindingHelper.registerKeyBinding(gridHere = new KeyBinding("grid:here", InputUtil.Type.KEYSYM, GLFW_KEY_C, category));
-        KeyBindingHelper.registerKeyBinding(gridFixY = new KeyBinding("grid:fixy", InputUtil.Type.KEYSYM, GLFW_KEY_Y, category));
-        KeyBindingHelper.registerKeyBinding(gridSpawns = new KeyBinding("grid:spawns", InputUtil.Type.KEYSYM, GLFW_KEY_L, category));
+        
+        KeyBindingRegistry.INSTANCE.addCategory(category);
+        KeyBindingRegistry.INSTANCE.register(
+            showHide=FabricKeyBinding.Builder
+                .create(new Identifier("grid:showhide"), InputUtil.Type.KEYSYM, GLFW_KEY_B, category)
+                .build());
+        KeyBindingRegistry.INSTANCE.register(
+            gridHere=FabricKeyBinding.Builder
+                .create(new Identifier("grid:here"), InputUtil.Type.KEYSYM, GLFW_KEY_C, category)
+                .build());
+        KeyBindingRegistry.INSTANCE.register(
+            gridFixY=FabricKeyBinding.Builder
+                .create(new Identifier("grid:fixy"), InputUtil.Type.KEYSYM, GLFW_KEY_Y, category)
+                .build());
+        KeyBindingRegistry.INSTANCE.register(
+            gridSpawns=FabricKeyBinding.Builder
+                .create(new Identifier("grid:spawns"), InputUtil.Type.KEYSYM, GLFW_KEY_L, category)
+                .build());
         ClientTickCallback.EVENT.register(e->processKeyBinds());
     }
 
