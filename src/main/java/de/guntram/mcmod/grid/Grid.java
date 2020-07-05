@@ -6,6 +6,7 @@ import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
+import de.guntram.mcmod.fabrictools.ConfigurationProvider;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.argument;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.literal;
 import io.github.cottonmc.clientcommands.ClientCommandPlugin;
@@ -14,13 +15,13 @@ import java.awt.Color;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.keybinding.FabricKeyBinding;
-import net.fabricmc.fabric.api.client.keybinding.KeyBindingRegistry;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.event.client.ClientTickCallback;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
@@ -31,7 +32,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.text.LiteralText;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.world.LightType;
@@ -60,9 +60,12 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     private boolean showGrid=false;
     private boolean isBlocks=true;
     private boolean isCircles=false;
+    private boolean isHexes = false;
     private boolean showSpawns=false;
     private Pattern showBiomes=null;
     private Logger LOGGER;
+    
+    private boolean fastSpawnCheck = true;
     
     
     private Color blockColor = new Color(0x8080ff);
@@ -72,7 +75,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     private Color spawnDayColor = new Color(0xff0000);
     private Color biomeColor = new Color(0xff00ff);
 
-    FabricKeyBinding showHide, gridHere, gridFixY, gridSpawns;
+    KeyBinding showHide, gridHere, gridFixY, gridSpawns;
     
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
@@ -80,6 +83,16 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     @Override
     public void onInitializeClient() {
         instance=this;
+        ConfigurationHandler confHandler = ConfigurationHandler.getInstance();
+        confHandler.load(ConfigurationProvider.getSuggestedFile(MODID));
+        
+        blockColor = new Color(confHandler.blockColor);
+        lineColor  = new Color(confHandler.lineColor);
+        circleColor= new Color(confHandler.circleColor);
+        spawnNightColor = new Color(confHandler.spawnNightColor);
+        spawnDayColor = new Color(confHandler.spawnDayColor);
+        biomeColor = new Color(confHandler.biomeColor);
+
         setKeyBindings();
         LOGGER = LogManager.getLogger(MODNAME);
     }
@@ -109,8 +122,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         int playerZShift=Math.floorMod(playerZ, gridZ);
         int baseX=playerX-playerXShift;
         int baseZ=playerZ-playerZShift;
-        int sizeX=(distance/gridX)*gridX;
-        int sizeZ=(distance/gridZ)*gridZ;
+        int sizeX=Math.max((distance/gridX)*gridX, 2*gridX);
+        int sizeZ=Math.max((distance/gridZ)*gridZ, 2*gridZ);
+        if (playerXShift > sizeX/2) { baseX += gridX; }
+        if (playerZShift > sizeZ/2) { baseZ += gridZ; }
 
         thisDumpTime=System.currentTimeMillis();
         dump=false;
@@ -136,8 +151,21 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             if (isBlocks) {
                 for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
                     for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
-                        drawSquare(bufferBuilder, stack, x, y, z, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);
-                        
+                        if (isHexes) {
+                            if (gridX >= gridZ) {
+                                drawXTriangleVertex(bufferBuilder, stack, x, y, z,                   true,  blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       //  dot itself
+                                drawXTriangleVertex(bufferBuilder, stack, x-gridZ/4f, y, z-gridZ/2f, false, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // left bottom of myself red
+                                drawXTriangleVertex(bufferBuilder, stack, x+gridX/2f-gridZ/4f, y, z, false, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // node right orange
+                                drawXTriangleVertex(bufferBuilder, stack, x+gridX/2f, y, z-gridZ/2f, true,  blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // right bottom of right node yellowgreenish
+                            } else {
+                                drawYTriangleVertex(bufferBuilder, stack, x, y, z,                   true,  blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       //  dot itself
+                                drawYTriangleVertex(bufferBuilder, stack, x-gridX/2f, y, z-gridX/4f, false, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // left bottom of myself red
+                                drawYTriangleVertex(bufferBuilder, stack, x, y, z+gridZ/2f-gridX/4f, false, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // node right orange
+                                drawYTriangleVertex(bufferBuilder, stack, x-gridX/2f, y, z+gridZ/2f, true,  blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // right bottom of right node yellowgreenish
+                            }
+                        } else {
+                            drawSquare(bufferBuilder, stack, x, y, z, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);
+                        }
                         if (isCircles) {
                             int dx=0;
                             int dz=gridX/2;
@@ -169,9 +197,31 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                     }
                 }
             } else {
-                if (!isCircles) {
-                    drawLineGrid(bufferBuilder, stack, baseX, baseZ, y, sizeX, sizeZ);
-                } else {
+                if (isHexes) {
+                    for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
+                        for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
+                            if (gridX >= gridZ) {
+                                drawLine(bufferBuilder, stack, x+0.5f, x+0.5f-gridZ/4f,                     y, y, z+0.5f, z+0.5f-gridZ/2f,          lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to LB
+                                drawLine(bufferBuilder, stack, x+0.5f, x+0.5f-gridZ/4f,                     y, y, z+0.5f, z+0.5f+gridZ/2f,          lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to LT
+                                drawLine(bufferBuilder, stack, x+0.5f, x+0.5f+gridX/2f-gridZ/4f,            y, y, z+0.5f, z+0.5f,                   lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to R
+                                drawLine(bufferBuilder, stack, x+0.5f+gridX/2f-gridZ/4f, x+0.5f+gridX/2f,   y, y, z+0.5f, z+0.5f-gridZ/2f,          lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to RB
+                                drawLine(bufferBuilder, stack, x+0.5f+gridX/2f-gridZ/4f, x+0.5f+gridX/2f,   y, y, z+0.5f, z+0.5f+gridZ/2f,          lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to RT
+                                
+                                drawLine(bufferBuilder, stack, x+0.5f+gridX/2f, x+0.5f+gridX-gridZ/4f,      y, y, z+0.5f+gridZ/2f, z+0.5f+gridZ/2f, lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // left stump out
+                                drawLine(bufferBuilder, stack, x+0.5f-gridZ/4f, x+0.5f-gridX/2f,            y, y, z+0.5f+gridZ/2f, z+0.5f+gridZ/2f, lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // right stump out
+                            } else {
+                                drawLine(bufferBuilder, stack, x+0.5f, x+0.5f-gridX/2f,          y, y, z+0.5f, z+0.5f-gridX/4f,                     lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to LT
+                                drawLine(bufferBuilder, stack, x+0.5f, x+0.5f+gridX/2f,          y, y, z+0.5f, z+0.5f-gridX/4f,                     lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to RT
+                                drawLine(bufferBuilder, stack, x+0.5f, x+0.5f,                   y, y, z+0.5f, z+0.5f+gridZ/2f-gridX/4f,            lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to B
+                                drawLine(bufferBuilder, stack, x+0.5f, x+0.5f-gridX/2f,          y, y, z+0.5f+gridZ/2f-gridX/4f, z+0.5f+gridZ/2f,   lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to LB
+                                drawLine(bufferBuilder, stack, x+0.5f, x+0.5f+gridX/2f,          y, y, z+0.5f+gridZ/2f-gridX/4f, z+0.5f+gridZ/2f,   lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to RB
+                                
+                                drawLine(bufferBuilder, stack, x+0.5f+gridX/2f, x+0.5f+gridX/2f, y, y, z+0.5f+gridZ/2f, z+0.5f+gridZ-gridX/4f,      lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // stump up
+                                drawLine(bufferBuilder, stack, x+0.5f+gridX/2f, x+0.5f+gridX/2f, y, y, z+0.5f-gridX/4f, z+0.5f-gridZ/2f,            lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // stump down
+                            }
+                        }
+                    }
+                } else if (isCircles) {
                     for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
                         for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
                             float dx=0;
@@ -187,6 +237,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                             dump=false;
                         }   
                     }
+                } else {
+                    drawLineGrid(bufferBuilder, stack, baseX, baseZ, y, sizeX, sizeZ);                        
                 }
             }
             tessellator.draw();
@@ -223,7 +275,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                 for (int y=miny; y<=maxy; y++) {
                     BlockPos pos=new BlockPos(x, y, z);
                     int spawnmode;
-                    if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, pos, EntityType.COD)) {
+                    if (fastSpawnCheck && player.world.getBlockState(pos.down()).isSolidBlock(player.world, pos.down())
+                    ||  !fastSpawnCheck && SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, pos, EntityType.COD)) {
                         if (player.world.getLightLevel(LightType.BLOCK, pos)>=lightLevel)
                             continue;
                         else if (player.world.getLightLevel(LightType.SKY, pos)>=lightLevel)
@@ -278,6 +331,21 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         drawLine (bufferBuilder, stack, x+0.7f, x+0.3f, y, y, z+0.7f, z+0.7f, r, g, b);
         drawLine (bufferBuilder, stack, x+0.3f, x+0.3f, y, y, z+0.7f, z+0.3f, r, g, b);
     }
+    
+    private void drawXTriangleVertex(BufferBuilder builder, MatrixStack stack, float x, float y, float z, boolean inverted, float r, float g, float b) {
+        float xMult = (inverted ? 1 : -1);
+        drawLine(builder, stack, x+0.5f, x+0.5f+ 0.5f*xMult, y, y, z+0.5f, z+0.5f, r, g, b);
+        drawLine(builder, stack, x+0.5f, x+0.5f-0.25f*xMult, y, y, z+0.5f, z+1.0f, r, g, b);
+        drawLine(builder, stack, x+0.5f, x+0.5f-0.25f*xMult, y, y, z+0.5f, z+0.0f, r, g, b);
+    }
+
+    private void drawYTriangleVertex(BufferBuilder builder, MatrixStack stack, float x, float y, float z, boolean inverted, float r, float g, float b) {
+        float xMult = (inverted ? 1 : -1);
+        drawLine(builder, stack, x+0.5f, x+0.5f, y, y, z+0.5f, z+0.5f+ 0.5f*xMult, r, g, b);        
+        drawLine(builder, stack, x+0.5f, x+1.0f, y, y, z+0.5f, z+0.5f-0.25f*xMult, r, g, b);
+        drawLine(builder, stack, x+0.5f, x+0.0f, y, y, z+0.5f, z+0.5f-0.25f*xMult, r, g, b);
+    }
+
     
     private void drawCircleSegment(BufferBuilder b, MatrixStack stack, float xc, float x1, float x2, float y, float zc, float z1, float z2, float red, float green, float blue) {
         drawLine(b, stack, xc+x1+0.5f, xc+x2+0.5f, y, y, zc+z1+0.5f, zc+z2+0.5f, red, green, blue);
@@ -365,6 +433,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             sender.sendMessage(new LiteralText(I18n.translate("msg.gridnomorecircles", (Object[]) null)), false);
         } else {
             isCircles = true;
+            isHexes = false;
             showGrid = true;
             sender.sendMessage(new LiteralText(I18n.translate("msg.gridcircles", (Object[]) null)), false);
         }
@@ -379,6 +448,16 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         offsetZ=playerZShift;
         showGrid=true;
         sender.sendMessage(new LiteralText(I18n.translate("msg.gridaligned", (Object[]) null)), false);
+    }
+    
+    private void cmdHex(ClientPlayerEntity sender) {
+        if (isHexes) {
+            isHexes = false;
+        } else {
+            isHexes = true;
+            isCircles = false;
+            showGrid = true;
+        }
     }
     
     private void cmdFixy(ClientPlayerEntity sender) {
@@ -481,6 +560,12 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                     })
                 )
                 .then(
+                    literal("hex").executes(c->{
+                        instance.cmdHex(MinecraftClient.getInstance().player);
+                        return 1;
+                    })
+                )
+                .then(
                     literal("fixy").then(
                         argument("y", integer()).executes(c->{
                             instance.cmdFixy(MinecraftClient.getInstance().player, getInteger(c, "y"));
@@ -543,23 +628,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
 
     public void setKeyBindings() {
         final String category="key.categories.grid";
-        KeyBindingRegistry.INSTANCE.addCategory(category);
-        KeyBindingRegistry.INSTANCE.register(
-            showHide=FabricKeyBinding.Builder
-                .create(new Identifier("grid:showhide"), InputUtil.Type.KEYSYM, GLFW_KEY_B, category)
-                .build());
-        KeyBindingRegistry.INSTANCE.register(
-            gridHere=FabricKeyBinding.Builder
-                .create(new Identifier("grid:here"), InputUtil.Type.KEYSYM, GLFW_KEY_C, category)
-                .build());
-        KeyBindingRegistry.INSTANCE.register(
-            gridFixY=FabricKeyBinding.Builder
-                .create(new Identifier("grid:fixy"), InputUtil.Type.KEYSYM, GLFW_KEY_Y, category)
-                .build());
-        KeyBindingRegistry.INSTANCE.register(
-            gridSpawns=FabricKeyBinding.Builder
-                .create(new Identifier("grid:spawns"), InputUtil.Type.KEYSYM, GLFW_KEY_L, category)
-                .build());
+        KeyBindingHelper.registerKeyBinding(showHide = new KeyBinding("grid:showhide", InputUtil.Type.KEYSYM, GLFW_KEY_B, category));
+        KeyBindingHelper.registerKeyBinding(gridHere = new KeyBinding("grid:here", InputUtil.Type.KEYSYM, GLFW_KEY_C, category));
+        KeyBindingHelper.registerKeyBinding(gridFixY = new KeyBinding("grid:fixy", InputUtil.Type.KEYSYM, GLFW_KEY_Y, category));
+        KeyBindingHelper.registerKeyBinding(gridSpawns = new KeyBinding("grid:spawns", InputUtil.Type.KEYSYM, GLFW_KEY_L, category));
         ClientTickCallback.EVENT.register(e->processKeyBinds());
     }
 
