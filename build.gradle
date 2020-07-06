@@ -13,7 +13,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = "1.16.1-forge32.0.38-1.6"
+version = "1.15.2-forge31.1.0-1.6"
 group = "de.guntram.mcmod.Grid" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "grid"
 
@@ -23,11 +23,11 @@ compileJava {
 }
 
 minecraft {
-    mappings channel: 'snapshot', version: '20200514-1.16'
+    mappings channel: 'snapshot', version: '20200704-1.15.1'
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.16.1-32.0.38'
+    minecraft 'net.minecraftforge:forge:1.15.2-31.1.0'
 
 }
 
