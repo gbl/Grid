@@ -1,0 +1,28 @@
+modLoader="javafml" #mandatory
+loaderVersion="[32,)" #mandatory (28 is current forge version)
+issueTrackerURL="https://github.com/gbl/Grid/issues"
+[[mods]]
+modId="grid"
+version="${file.jarVersion}"
+displayName="Grid"
+displayURL="https://github.com/gbl/Grid"
+logoFile="logo.png"
+credits=""
+authors="Giselbaer"
+description='''
+Show Markers to help with counting blocks, building hexes and circles, and showing possible mob spawn locations
+'''
+
+[[dependencies.grid]] #optional
+    modId="forge"
+    mandatory=true
+    versionRange="[32,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.grid]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.16.1,)"
+    ordering="NONE"
+    side="CLIENT"

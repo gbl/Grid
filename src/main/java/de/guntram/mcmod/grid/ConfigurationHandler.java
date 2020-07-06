@@ -1,8 +1,8 @@
 package de.guntram.mcmod.grid;
 
-import de.guntram.mcmod.fabrictools.ConfigChangedEvent;
-import de.guntram.mcmod.fabrictools.Configuration;
-import de.guntram.mcmod.fabrictools.ModConfigurationHandler;
+import de.guntram.mcmod.GBForgetools.ConfigChangedEvent;
+import de.guntram.mcmod.GBForgetools.Configuration;
+import de.guntram.mcmod.GBForgetools.ModConfigurationHandler;
 import java.io.File;
 
 public class ConfigurationHandler implements ModConfigurationHandler {
