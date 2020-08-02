@@ -628,10 +628,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
 
     public void setKeyBindings() {
         final String category="key.categories.grid";
-        KeyBindingHelper.registerKeyBinding(showHide = new KeyBinding("grid:showhide", InputUtil.Type.KEYSYM, GLFW_KEY_B, category));
-        KeyBindingHelper.registerKeyBinding(gridHere = new KeyBinding("grid:here", InputUtil.Type.KEYSYM, GLFW_KEY_C, category));
-        KeyBindingHelper.registerKeyBinding(gridFixY = new KeyBinding("grid:fixy", InputUtil.Type.KEYSYM, GLFW_KEY_Y, category));
-        KeyBindingHelper.registerKeyBinding(gridSpawns = new KeyBinding("grid:spawns", InputUtil.Type.KEYSYM, GLFW_KEY_L, category));
+        KeyBindingHelper.registerKeyBinding(showHide = new KeyBinding("key.grid.showhide", InputUtil.Type.KEYSYM, GLFW_KEY_B, category));
+        KeyBindingHelper.registerKeyBinding(gridHere = new KeyBinding("key.grid.here", InputUtil.Type.KEYSYM, GLFW_KEY_C, category));
+        KeyBindingHelper.registerKeyBinding(gridFixY = new KeyBinding("key.grid.fixy", InputUtil.Type.KEYSYM, GLFW_KEY_Y, category));
+        KeyBindingHelper.registerKeyBinding(gridSpawns = new KeyBinding("key.grid.spawns", InputUtil.Type.KEYSYM, GLFW_KEY_L, category));
         ClientTickCallback.EVENT.register(e->processKeyBinds());
     }
 
