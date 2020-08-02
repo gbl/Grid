@@ -15,8 +15,8 @@ import java.awt.Color;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.event.client.ClientTickCallback;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -34,8 +34,11 @@ import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.registry.MutableRegistry;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.LightType;
 import net.minecraft.world.SpawnHelper;
+import net.minecraft.world.biome.Biome;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_B;
@@ -294,9 +297,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         int maxy=(int)(player.getY());
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
+        MutableRegistry<Biome> registry = player.world.getRegistryManager().get(Registry.BIOME_KEY);
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
-                if (showBiomes.matcher(player.world.getBiome(new BlockPos(x, 1, z)).getName().getString()).find()) {
+                if (showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z))).getPath()).find()) {
                     int y;
                     if (fixY == -1) {
                         y=(int)(player.getY());
@@ -628,11 +632,11 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
 
     public void setKeyBindings() {
         final String category="key.categories.grid";
-        KeyBindingHelper.registerKeyBinding(showHide = new KeyBinding("grid:showhide", InputUtil.Type.KEYSYM, GLFW_KEY_B, category));
-        KeyBindingHelper.registerKeyBinding(gridHere = new KeyBinding("grid:here", InputUtil.Type.KEYSYM, GLFW_KEY_C, category));
-        KeyBindingHelper.registerKeyBinding(gridFixY = new KeyBinding("grid:fixy", InputUtil.Type.KEYSYM, GLFW_KEY_Y, category));
-        KeyBindingHelper.registerKeyBinding(gridSpawns = new KeyBinding("grid:spawns", InputUtil.Type.KEYSYM, GLFW_KEY_L, category));
-        ClientTickCallback.EVENT.register(e->processKeyBinds());
+        KeyBindingHelper.registerKeyBinding(showHide = new KeyBinding("key.grid.showhide", InputUtil.Type.KEYSYM, GLFW_KEY_B, category));
+        KeyBindingHelper.registerKeyBinding(gridHere = new KeyBinding("key.grid.here", InputUtil.Type.KEYSYM, GLFW_KEY_C, category));
+        KeyBindingHelper.registerKeyBinding(gridFixY = new KeyBinding("key.grid.fixy", InputUtil.Type.KEYSYM, GLFW_KEY_Y, category));
+        KeyBindingHelper.registerKeyBinding(gridSpawns = new KeyBinding("key.grid.spawns", InputUtil.Type.KEYSYM, GLFW_KEY_L, category));
+        ClientTickEvents.END_CLIENT_TICK.register(e->processKeyBinds());
     }
 
     public void processKeyBinds() {
