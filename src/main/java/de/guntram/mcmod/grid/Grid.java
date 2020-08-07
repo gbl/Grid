@@ -35,7 +35,6 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
@@ -44,8 +43,6 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_B;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_C;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_L;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_Y;
-
-@Mod("grid")
 
 public class Grid
 {
@@ -86,6 +83,9 @@ public class Grid
     CommandDispatcher cd;
     
     public Grid() {
+        // As almost everything here whould be @OnlyIn(Dist.CLIENT),
+        // it's easier to do @MOD and the loading stuff in GridMain
+        // which only calls us (and loads the class) on the client side.
         IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         bus.addListener(this::init);
     }
