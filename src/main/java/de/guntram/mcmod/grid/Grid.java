@@ -26,8 +26,11 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Matrix4f;
+import net.minecraft.util.registry.MutableRegistry;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.LightType;
+import net.minecraft.world.biome.Biome;
 import net.minecraftforge.client.event.ClientChatEvent;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
@@ -315,9 +318,10 @@ public class Grid
         int maxy=(int)(player.getPosY());
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
+        MutableRegistry<Biome> registry = player.world.func_241828_r().func_243612_b(Registry.field_239720_u_);
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
-                if (showBiomes.matcher(player.world.getBiome(new BlockPos(x, 1, z)).getDisplayName().getString()).find()) {
+                if (showBiomes.matcher(registry.getKey(player.world.getBiome(new BlockPos(x, 1, z))).getPath()).find()) {
                     int y;
                     if (fixY == -1) {
                         y=(int)(player.getPosY());
