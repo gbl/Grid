@@ -4,7 +4,6 @@
     "key.grid.here": "Gitter auf Spieler zentrieren",
     "key.grid.fixy": "Gitterhöhe fixieren",
     "key.grid.spawns": "Spawnblöcke zeigen/verstecken",
-
     "msg.gridshown": "Gitter angezeigt.",
     "msg.gridhidden": "Gitter versteckt.",
     "msg.gridlines": "Gitter zeigt Linien.",
