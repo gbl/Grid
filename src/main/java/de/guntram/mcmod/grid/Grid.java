@@ -1,5 +1,6 @@
 package de.guntram.mcmod.grid;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
@@ -108,10 +109,12 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         stack.push();
         stack.translate(-cameraX, -cameraY, -cameraZ);
 
-        RenderSystem.disableTexture();
-        RenderSystem.disableBlend();
-        RenderSystem.enableAlphaTest();
-        RenderSystem.enableDepthTest();
+        GlStateManager.disableTexture();
+        GlStateManager.disableBlend();
+        GlStateManager.enableAlphaTest();
+        GlStateManager.enableDepthTest();
+        // VoxelMap in Waypoint-Beacon-mode (and maybe Fabritone?) leave lighting enabled which causes display errors.
+        GlStateManager.disableLighting();               
 
         Tessellator tessellator=Tessellator.getInstance();
         BufferBuilder bufferBuilder = tessellator.getBuffer();
