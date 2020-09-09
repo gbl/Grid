@@ -103,18 +103,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             return;
 
         Entity player = MinecraftClient.getInstance().getCameraEntity();
-        // double cameraX = player.lastRenderX + (player.getX() - player.lastRenderX) * (double)partialTicks;
-        // double cameraY = player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks + player.getEyeHeight(player.getPose());
-        // double cameraZ = player.lastRenderZ + (player.getZ() - player.lastRenderZ) * (double)partialTicks;        
         stack.push();
         stack.translate(-cameraX, -cameraY, -cameraZ);
-
-        // GlStateManager.disableTexture();
-        // GlStateManager.disableBlend();
-        // GlStateManager.enableAlphaTest();
-        // GlStateManager.enableDepthTest();
-        // VoxelMap in Waypoint-Beacon-mode (and maybe Fabritone?) leave lighting enabled which causes display errors.
-        // GlStateManager.disableLighting();               
 
         int playerX=(int) Math.floor(player.getX());
         int playerZ=(int) Math.floor(player.getZ());
@@ -143,7 +133,6 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                 y=tempy-0.05f;
             }
                 
-            // RenderSystem.lineWidth(3.0f);
             stack.push();
             stack.translate(offsetX, 0, offsetZ);
             int circRadSquare=(gridX/2)*(gridX/2);
@@ -244,19 +233,14 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         }
         
         if (showSpawns) {
-            // RenderSystem.lineWidth(1.0f);
             showSpawns(consumer, stack, player, baseX, baseZ);
         }
         
         if (showBiomes!=null) {
-            // RenderSystem.lineWidth(1.0f);
             showBiomes(consumer, stack, player, baseX, baseZ);
         }
 
         stack.pop();
-        
-        // RenderSystem.enableBlend();
-        // RenderSystem.enableTexture();
     }
     
     private void showSpawns(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
@@ -358,10 +342,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             System.out.println("line from "+x1+","+y1+","+z1+" to "+x2+","+y2+","+z2);
         }
         Matrix4f model = stack.peek().getModel();
-//        consumer.vertex(model, x1, y1, z1).color(red, green, blue, 0.0f).next();
         consumer.vertex(model, x1, y1, z1).color(red, green, blue, 1.0f).next();
         consumer.vertex(model, x2, y2, z2).color(red, green, blue, 1.0f).next();
-//        consumer.vertex(model, x2, y2, z2).color(red, green, blue, 0.0f).next();
     }
     
     private void drawCross(VertexConsumer consumer, MatrixStack stack, float x, float y, float z, float red, float green, float blue, boolean twoLegs) {
@@ -373,7 +355,6 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     
     private void drawDiamond(VertexConsumer consumer, MatrixStack stack, int x, int y, int z, float red, float green, float blue) {
         Matrix4f model = stack.peek().getModel();
-//        consumer.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 0.0f).next();
         consumer.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
         consumer.vertex(model, x+0.5f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
         consumer.vertex(model, x+0.5f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
@@ -382,8 +363,6 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         consumer.vertex(model, x+0.5f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
         consumer.vertex(model, x+0.5f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
         consumer.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
-//        consumer.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
-//        consumer.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 0.0f).next();
     }
     
     private void cmdShow(ClientPlayerEntity sender) {

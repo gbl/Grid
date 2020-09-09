@@ -4,7 +4,7 @@
     "refmap": "Grid-refmap.json",
     "minVersion": "0.6",
     "client": [
-        "MixinRenderWorldLast", "MixinWorldRenderer"
+        "MixinWorldRenderer"
     ],
     "injectors": {
         "defaultRequire": 1
