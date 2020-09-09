@@ -263,7 +263,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     }
     
     private void showSpawns(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
-        int miny=(int)(player.getY())-16;
+        int miny=(int)(player.getY())-64;
         int maxy=(int)(player.getY())+2;
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
@@ -284,7 +284,9 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                     if (cachedChunk == null || cachedChunk.getPos().x != (x>>4) || cachedChunk.getPos().z != (z>>4)) {
                         cachedChunk=player.world.getChunk(x>>4, z>>4);
                     }
+                    boolean foundAir = false;
                     for (int y=maxy; y>=miny; y--) {
+
                         BlockState state;
                         BlockPos pos=new BlockPos(x, y, z);
 
@@ -296,7 +298,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                             state = section.getBlockState(x & 15, y & 15, z & 15);
                         }
                         if (state.isSolidBlock(player.world, pos)) {
-                            if (y != maxy) {
+                            if (foundAir && y != maxy) {
                                 BlockPos up = pos.up();
                                 if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, up, EntityType.COD)) {
                                     if (player.world.getLightLevel(LightType.BLOCK, up)>=lightLevel)
@@ -307,7 +309,11 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                                         display = 0x2000 | y;
                                 }
                             }
-                            break;
+                            if (foundAir) {
+                                break;
+                            }
+                        } else {
+                            foundAir = true;
                         }
                     }
                     spawnCache[x&0xff][z&0xff] = display;
