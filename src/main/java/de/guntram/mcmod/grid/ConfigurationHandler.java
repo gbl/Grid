@@ -18,6 +18,7 @@ public class ConfigurationHandler implements ModConfigurationHandler {
         return instance;
     }
     int blockColor, lineColor, circleColor, spawnNightColor, spawnDayColor, biomeColor;
+    int cacheUpdateSeconds;
 
     public void load(final File configFile) {
         if (config == null) {
@@ -44,6 +45,8 @@ public class ConfigurationHandler implements ModConfigurationHandler {
         spawnDayColor =     config.getInt("grid.config.spawnDaycolor",  Configuration.CATEGORY_CLIENT, 0xff0000, 0, 0xffffff, "grid.config.tt.spawnDaycolor");
         biomeColor =        config.getInt("grid.config.biomecolor",     Configuration.CATEGORY_CLIENT, 0xff00ff, 0, 0xffffff, "grid.config.tt.biomecolor");
         
+        cacheUpdateSeconds= config.getInt("grid.config.cacheupdateseconds", Configuration.CATEGORY_CLIENT, 1, 0, 20, "grid.config.tt.cacheupdateseconds");
+        
         
         if (config.hasChanged())
             config.save();
@@ -56,5 +59,9 @@ public class ConfigurationHandler implements ModConfigurationHandler {
     
     public static String getConfigFileName() {
         return getInstance().configFileName;
+    }
+    
+    public static int getCacheUpdateSeconds() {
+        return getInstance().cacheUpdateSeconds;
     }
 }

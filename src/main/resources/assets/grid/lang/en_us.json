@@ -23,5 +23,20 @@
     "msg.spawnsshown": "Mob spawn locations shown (light level < %d)",
     "msg.spawnshidden": "Mob spawn locations hidden",
     "msg.biomesearching": "Marking biome %s",
-    "msg.biomepatternbad": "'%s' ist not a valid search pattern"
+    "msg.biomepatternbad": "'%s' ist not a valid search pattern",
+    
+    "grid.config.blockcolor":       "Block color",
+    "grid.config.tt.blockcolor":        "The color that square /grid blocks markers will be shown in",
+    "grid.config.linecolor":            "Line color",
+    "grid.config.tt.linecolor":         "The color that /grid line lines and hexes will be shown in",
+    "grid.config.circlecolor":          "Circle color",
+    "grid.config.tt.circlecolor":       "The color that /grid circles will be shown in",
+    "grid.config.spawnNightcolor":      "Night spawn color",
+    "grid.config.tt.spawnNightcolor":   "The color that night spawns will be shown in",
+    "grid.config.spawnDaycolor":        "Everytime spawn color",
+    "grid.config.tt.spawnDaycolor":     "The color that everytime spawns will be shown in",
+    "grid.config.biomecolor":           "Biome marker color",
+    "grid.config.tt.biomecolor":        "The color that biome markers will be shown in",
+    "grid.config.cacheupdateseconds":   "Update time in seconds for spawns and biomes",
+    "grid.config.tt.cacheupdateseconds":"Set this to 0 to see changes immediately, at the expense of frame rate. Higher values increase frame rate but will take a bit to display changes."
 }

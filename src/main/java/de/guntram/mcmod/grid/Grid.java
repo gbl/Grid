@@ -11,12 +11,15 @@ import static io.github.cottonmc.clientcommands.ArgumentBuilders.literal;
 import io.github.cottonmc.clientcommands.ClientCommandPlugin;
 import io.github.cottonmc.clientcommands.CottonClientCommandSource;
 import java.awt.Color;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -35,7 +38,10 @@ import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.LightType;
 import net.minecraft.world.SpawnHelper;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_B;
@@ -79,6 +85,9 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
+    
+    private Map<BiomeDisplayEntry, BiomeDisplayEntry> biomeCache;
+    private Map<BlockPos, SpawnDisplayEntry> spawnCache;
 
     @Override
     public void onInitializeClient() {
@@ -92,6 +101,9 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         spawnNightColor = new Color(confHandler.spawnNightColor);
         spawnDayColor = new Color(confHandler.spawnDayColor);
         biomeColor = new Color(confHandler.biomeColor);
+        
+        biomeCache = new HashMap<>();
+        spawnCache = new HashMap<>();
 
         setKeyBindings();
         LOGGER = LogManager.getLogger(MODNAME);
@@ -248,23 +260,68 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         int maxy=(int)(player.getY())+2;
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
+        int updateCount = 0;
+        int updatemsec = ConfigurationHandler.getCacheUpdateSeconds()*1000;
+
+        WorldChunk cachedChunk = null;
+
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
-                for (int y=miny; y<=maxy; y++) {
+                if (cachedChunk == null || cachedChunk.getPos().x != (x>>4) || cachedChunk.getPos().z != (z>>4)) {
+                    cachedChunk=player.world.getChunk(x>>4, z>>4);
+                }
+                for (int y=maxy; y>=miny; y--) {
+                    BlockState state;
                     BlockPos pos=new BlockPos(x, y, z);
-                    int spawnmode;
-                    if (fastSpawnCheck && player.world.getBlockState(pos.down()).isSolidBlock(player.world, pos.down())
-                    ||  !fastSpawnCheck && SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, pos, EntityType.COD)) {
-                        if (player.world.getLightLevel(LightType.BLOCK, pos)>=lightLevel)
+
+                    SpawnDisplayEntry entry = new SpawnDisplayEntry(x, y, z, 0, 0);
+                    SpawnDisplayEntry cache = spawnCache.get(pos);
+                    //if (x==baseX && z==baseZ) { System.out.println("got "+cache+" at y= "+y); }
+                    if (cache == null
+                    || cache.generated < System.currentTimeMillis() - updatemsec && ++updateCount < 256) {
+                        if (cache == null && updatemsec > 0) {
+                            spawnCache.put(pos, entry);
+                            cache = entry;
+                        }
+                        cache.generated = System.currentTimeMillis();
+                        cache.display = -1;
+
+                        ChunkSection section = cachedChunk.getSectionArray()[y>>4];
+                        if (section == null || section.isEmpty()) {
+                            //if (x==baseX && z==baseZ) System.out.println("section is empty for "+y);
                             continue;
-                        else if (player.world.getLightLevel(LightType.SKY, pos)>=lightLevel)
-                            drawCross(consumer, stack, x, y+0.05f, z, spawnNightColor.getRed()/255f, spawnNightColor.getGreen()/255f, spawnNightColor.getBlue()/255f, false );
-                        else
-                            drawCross(consumer, stack, x, y+0.05f, z, spawnDayColor.getRed()/255f, spawnDayColor.getGreen()/255f, spawnDayColor.getBlue()/255f, true );
+                        } else {
+                            state = section.getBlockState(x & 15, y & 15, z & 15);
+                        }
+                        if (state.isSolidBlock(player.world, pos)) {
+                            if (y != maxy) {
+                                BlockPos up = pos.up();
+                                if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, up, EntityType.COD)) {
+                                    if (player.world.getLightLevel(LightType.BLOCK, up)>=lightLevel)
+                                        cache.display = 0;
+                                    else if (player.world.getLightLevel(LightType.SKY, up)>=lightLevel)
+                                        cache.display = 1;
+                                    else
+                                        cache.display = 2;
+                                }
+                            }
+                            //if (x==baseX && z==baseZ) System.out.println("after check: "+cache);
+                        }
+                    }
+                    if (cache.display == 1) {
+                        drawCross(consumer, stack, pos.getX(), pos.getY()+1.05f, pos.getZ(), spawnNightColor.getRed()/255f, spawnNightColor.getGreen()/255f, spawnNightColor.getBlue()/255f, false );
+                    } else if (cache.display == 2) {
+                        drawCross(consumer, stack, pos.getX(), pos.getY()+1.05f, pos.getZ(), spawnDayColor.getRed()/255f, spawnDayColor.getGreen()/255f, spawnDayColor.getBlue()/255f, true );
+                    }
+                    if (cache.display != -1 && fastSpawnCheck) {
+                        break;
                     }
                 }
             }
         }
+    }
+    
+    private void drawCrossIfSpawnable(MatrixStack stack, VertexConsumer consumer, World world, BlockPos pos) {
     }
     
     private void showBiomes(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
@@ -272,16 +329,32 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         int maxy=(int)(player.getY());
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
+        int updateCount = 0;
+        int updatemsec = ConfigurationHandler.getCacheUpdateSeconds()*1000;
         MutableRegistry<Biome> registry = player.world.getRegistryManager().get(Registry.BIOME_KEY);
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
-                if (showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z))).getPath()).find()) {
+                BiomeDisplayEntry entry = new BiomeDisplayEntry(x, z, false, 0, 0l);
+                BiomeDisplayEntry cache = biomeCache.get(entry);
+                if (cache == null
+                || cache.generated < System.currentTimeMillis() - updatemsec && ++updateCount < 256) {
+                    if (cache == null && updatemsec > 0) {
+                        biomeCache.put(entry, entry);
+                        cache = entry;
+                    }
+                    cache.display = showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z))).getPath()).find();
+                    int y=(int)(player.getY());
+                    while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
+                        y--;
+                    }
+                    cache.displayHeight = y;
+                    cache.generated = System.currentTimeMillis();
+                    
+                }
+                if (cache.display) {
                     int y;
                     if (fixY == -1) {
-                        y=(int)(player.getY());
-                        while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
-                            y--;
-                        }
+                        y=cache.displayHeight;
                     } else {
                         y=fixY-1;
                     }
@@ -376,6 +449,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     }
     
     private void cmdSpawns(ClientPlayerEntity sender, String newLevel) {
+        spawnCache = new HashMap<>();
         int level=8;
         try {
             level=Integer.parseInt(newLevel);
@@ -484,6 +558,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     }
     
     private void cmdBiome(ClientPlayerEntity sender, String biome) {
+        biomeCache = new HashMap<>();
         if (biome == null  || biome.isEmpty()) {
             showBiomes = null;
         } else {
