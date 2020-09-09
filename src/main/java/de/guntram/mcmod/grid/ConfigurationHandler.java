@@ -18,7 +18,7 @@ public class ConfigurationHandler implements ModConfigurationHandler {
         return instance;
     }
     int blockColor, lineColor, circleColor, spawnNightColor, spawnDayColor, biomeColor;
-    int cacheUpdateSeconds;
+    boolean useCache;
 
     public void load(final File configFile) {
         if (config == null) {
@@ -38,15 +38,22 @@ public class ConfigurationHandler implements ModConfigurationHandler {
     
     private void loadConfig() {
         
-        blockColor =        config.getInt("grid.config.blockcolor",     Configuration.CATEGORY_CLIENT, 0x8080ff, 0, 0xffffff, "grid.config.tt.blockcolor");
-        lineColor =         config.getInt("grid.config.linecolor",      Configuration.CATEGORY_CLIENT, 0xff8000, 0, 0xffffff, "grid.config.tt.linecolor");
-        circleColor =       config.getInt("grid.config.circlecolor",    Configuration.CATEGORY_CLIENT, 0x00e480, 0, 0xffffff, "grid.config.tt.circlecolor");
-        spawnNightColor =   config.getInt("grid.config.spawnNightcolor",Configuration.CATEGORY_CLIENT, 0xffff00, 0, 0xffffff, "grid.config.tt.spawnNightcolor");
-        spawnDayColor =     config.getInt("grid.config.spawnDaycolor",  Configuration.CATEGORY_CLIENT, 0xff0000, 0, 0xffffff, "grid.config.tt.spawnDaycolor");
-        biomeColor =        config.getInt("grid.config.biomecolor",     Configuration.CATEGORY_CLIENT, 0xff00ff, 0, 0xffffff, "grid.config.tt.biomecolor");
+        config.forget("grid.config.blockcolor");
+        config.forget("grid.config.linecolor");
+        config.forget("grid.config.circlecolor");
+        config.forget("grid.config.spawnNightcolor");
+        config.forget("grid.config.spawnDaycolor");
+        config.forget("grid.config.biomecolor");
+        config.forget("grid.config.cacheupdateseconds");
         
-        cacheUpdateSeconds= config.getInt("grid.config.cacheupdateseconds", Configuration.CATEGORY_CLIENT, 1, 0, 20, "grid.config.tt.cacheupdateseconds");
+        blockColor =        config.getInt("grid.config.colorblock",     Configuration.CATEGORY_CLIENT, 0x8080ff, 0, 0xffffff, "grid.config.tt.colorblock");
+        lineColor =         config.getInt("grid.config.colorline",      Configuration.CATEGORY_CLIENT, 0xff8000, 0, 0xffffff, "grid.config.tt.colorline");
+        circleColor =       config.getInt("grid.config.colorcircle",    Configuration.CATEGORY_CLIENT, 0x00e480, 0, 0xffffff, "grid.config.tt.colorcircle");
+        spawnNightColor =   config.getInt("grid.config.colorspawnnight",Configuration.CATEGORY_CLIENT, 0xffff00, 0, 0xffffff, "grid.config.tt.colorspawnnight");
+        spawnDayColor =     config.getInt("grid.config.colorspawnday",  Configuration.CATEGORY_CLIENT, 0xff0000, 0, 0xffffff, "grid.config.tt.colorspawnday");
+        biomeColor =        config.getInt("grid.config.colorbiome",     Configuration.CATEGORY_CLIENT, 0xff00ff, 0, 0xffffff, "grid.config.tt.colorbiome");
         
+        useCache = config.getBoolean("grid.config.usecache", Configuration.CATEGORY_CLIENT, true, "grid.config.tt.usecache");
         
         if (config.hasChanged())
             config.save();
@@ -61,7 +68,7 @@ public class ConfigurationHandler implements ModConfigurationHandler {
         return getInstance().configFileName;
     }
     
-    public static int getCacheUpdateSeconds() {
-        return getInstance().cacheUpdateSeconds;
+    public static boolean getUseCache() {
+        return getInstance().useCache;
     }
 }

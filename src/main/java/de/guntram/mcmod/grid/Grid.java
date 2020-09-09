@@ -10,9 +10,6 @@ import static io.github.cottonmc.clientcommands.ArgumentBuilders.argument;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.literal;
 import io.github.cottonmc.clientcommands.ClientCommandPlugin;
 import io.github.cottonmc.clientcommands.CottonClientCommandSource;
-import java.awt.Color;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
@@ -38,7 +35,6 @@ import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.LightType;
 import net.minecraft.world.SpawnHelper;
-import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
@@ -71,46 +67,53 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     private Pattern showBiomes=null;
     private Logger LOGGER;
     
-    private boolean fastSpawnCheck = true;
-    
-    
-    private Color blockColor = new Color(0x8080ff);
-    private Color lineColor = new Color(0xff8000);
-    private Color circleColor = new Color(0x00e480);
-    private Color spawnNightColor = new Color(0xffff00);
-    private Color spawnDayColor = new Color(0xff0000);
-    private Color biomeColor = new Color(0xff00ff);
+    private float[] blockColor      = colorToRgb(0x8080ff);
+    private float[] lineColor       = colorToRgb(0xff8000);
+    private float[] circleColor     = colorToRgb(0x00e480);
+    private float[] spawnNightColor = colorToRgb(0xffff00);
+    private float[] spawnDayColor   = colorToRgb(0xff0000);
+    private float[] biomeColor      = colorToRgb(0xff00ff);
 
     KeyBinding showHide, gridHere, gridFixY, gridSpawns;
     
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
     
-    private Map<BiomeDisplayEntry, BiomeDisplayEntry> biomeCache;
+    private int[][] biomeCache;
     private int[][] spawnCache;
-    int spawnUpdateX;
+    int biomeUpdateX, spawnUpdateX;
 
     @Override
     public void onInitializeClient() {
         instance=this;
         ConfigurationHandler confHandler = ConfigurationHandler.getInstance();
+        ConfigurationProvider.register(MODNAME, confHandler);
         confHandler.load(ConfigurationProvider.getSuggestedFile(MODID));
         
-        blockColor = new Color(confHandler.blockColor);
-        lineColor  = new Color(confHandler.lineColor);
-        circleColor= new Color(confHandler.circleColor);
-        spawnNightColor = new Color(confHandler.spawnNightColor);
-        spawnDayColor = new Color(confHandler.spawnDayColor);
-        biomeColor = new Color(confHandler.biomeColor);
+        blockColor =        colorToRgb(confHandler.blockColor);
+        lineColor  =        colorToRgb(confHandler.lineColor);
+        circleColor=        colorToRgb(confHandler.circleColor);
+        spawnNightColor =   colorToRgb(confHandler.spawnNightColor);
+        spawnDayColor =     colorToRgb(confHandler.spawnDayColor);
+        biomeColor =        colorToRgb(confHandler.biomeColor);
         
-        biomeCache = new HashMap<>();
+        biomeCache = new int[256][];
         spawnCache = new int[256][];
         for (int i=0; i<256; i++) {
             spawnCache[i]=new int[256];
+            biomeCache[i]=new int[256];
         }
 
         setKeyBindings();
         LOGGER = LogManager.getLogger(MODNAME);
+    }
+    
+    private float[] colorToRgb(int color) {
+        float[] result = new float[3];
+        result[0] = ((color>>16)&0xff) / 255f;
+        result[1] = ((color>> 8)&0xff) / 255f;
+        result[2] = ((color>> 0)&0xff) / 255f;
+        return result;
     }
     
     public void renderOverlay(float partialTicks, MatrixStack stack, VertexConsumer consumer, double cameraX, double cameraY, double cameraZ) {
@@ -157,18 +160,18 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                     for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
                         if (isHexes) {
                             if (gridX >= gridZ) {
-                                drawXTriangleVertex(consumer, stack, x, y, z,                   true,  blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       //  dot itself
-                                drawXTriangleVertex(consumer, stack, x-gridZ/4f, y, z-gridZ/2f, false, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // left bottom of myself red
-                                drawXTriangleVertex(consumer, stack, x+gridX/2f-gridZ/4f, y, z, false, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // node right orange
-                                drawXTriangleVertex(consumer, stack, x+gridX/2f, y, z-gridZ/2f, true,  blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // right bottom of right node yellowgreenish
+                                drawXTriangleVertex(consumer, stack, x, y, z,                   true,  blockColor[0], blockColor[1], blockColor[2]);       //  dot itself
+                                drawXTriangleVertex(consumer, stack, x-gridZ/4f, y, z-gridZ/2f, false, blockColor[0], blockColor[1], blockColor[2]);       // left bottom of myself red
+                                drawXTriangleVertex(consumer, stack, x+gridX/2f-gridZ/4f, y, z, false, blockColor[0], blockColor[1], blockColor[2]);       // node right orange
+                                drawXTriangleVertex(consumer, stack, x+gridX/2f, y, z-gridZ/2f, true,  blockColor[0], blockColor[1], blockColor[2]);       // right bottom of right node yellowgreenish
                             } else {
-                                drawYTriangleVertex(consumer, stack, x, y, z,                   true,  blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       //  dot itself
-                                drawYTriangleVertex(consumer, stack, x-gridX/2f, y, z-gridX/4f, false, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // left bottom of myself red
-                                drawYTriangleVertex(consumer, stack, x, y, z+gridZ/2f-gridX/4f, false, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // node right orange
-                                drawYTriangleVertex(consumer, stack, x-gridX/2f, y, z+gridZ/2f, true,  blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);       // right bottom of right node yellowgreenish
+                                drawYTriangleVertex(consumer, stack, x, y, z,                   true,  blockColor[0], blockColor[1], blockColor[2]);       //  dot itself
+                                drawYTriangleVertex(consumer, stack, x-gridX/2f, y, z-gridX/4f, false, blockColor[0], blockColor[1], blockColor[2]);       // left bottom of myself red
+                                drawYTriangleVertex(consumer, stack, x, y, z+gridZ/2f-gridX/4f, false, blockColor[0], blockColor[1], blockColor[2]);       // node right orange
+                                drawYTriangleVertex(consumer, stack, x-gridX/2f, y, z+gridZ/2f, true,  blockColor[0], blockColor[1], blockColor[2]);       // right bottom of right node yellowgreenish
                             }
                         } else {
-                            drawSquare(consumer, stack, x, y, z, blockColor.getRed()/255f, blockColor.getGreen()/255f, blockColor.getBlue()/255f);
+                            drawSquare(consumer, stack, x, y, z, blockColor[0], blockColor[1], blockColor[2]);
                         }
                         if (isCircles) {
                             int dx=0;
@@ -180,7 +183,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                                 if (nextz>0 && (nextz-1)*(nextz-1)+(nextx*nextx)>circRadSquare-toomuch)
                                     nextz--;
                                 if (nextz<nextx) {
-                                    drawCircleSegment(consumer, stack, x, dx, dz, y, z, dz, dx, circleColor.getRed()/255f, circleColor.getGreen()/255f, circleColor.getBlue()/255f);
+                                    drawCircleSegment(consumer, stack, x, dx, dz, y, z, dz, dx, circleColor[0], circleColor[1], circleColor[2]);
                                     break;
                                 }
 
@@ -192,7 +195,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                                             ", one lower dist is "+(nextx*nextx+((nextz-1)*(nextz-1)))
                                             );
                                 }
-                                drawCircleSegment(consumer, stack, x, dx, nextx, y, z, dz, nextz, circleColor.getRed()/255f, circleColor.getGreen()/255f, circleColor.getBlue()/255f);
+                                drawCircleSegment(consumer, stack, x, dx, nextx, y, z, dz, nextz, circleColor[0], circleColor[1], circleColor[2]);
                                 dx=nextx;
                                 dz=nextz;
                             }
@@ -205,23 +208,23 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                     for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
                         for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
                             if (gridX >= gridZ) {
-                                drawLine(consumer, stack, x+0.5f, x+0.5f-gridZ/4f,                     y, y, z+0.5f, z+0.5f-gridZ/2f,          lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to LB
-                                drawLine(consumer, stack, x+0.5f, x+0.5f-gridZ/4f,                     y, y, z+0.5f, z+0.5f+gridZ/2f,          lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to LT
-                                drawLine(consumer, stack, x+0.5f, x+0.5f+gridX/2f-gridZ/4f,            y, y, z+0.5f, z+0.5f,                   lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to R
-                                drawLine(consumer, stack, x+0.5f+gridX/2f-gridZ/4f, x+0.5f+gridX/2f,   y, y, z+0.5f, z+0.5f-gridZ/2f,          lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to RB
-                                drawLine(consumer, stack, x+0.5f+gridX/2f-gridZ/4f, x+0.5f+gridX/2f,   y, y, z+0.5f, z+0.5f+gridZ/2f,          lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to RT
+                                drawLine(consumer, stack, x+0.5f, x+0.5f-gridZ/4f,                     y, y, z+0.5f, z+0.5f-gridZ/2f,          lineColor[0], lineColor[1], lineColor[2]);   // to LB
+                                drawLine(consumer, stack, x+0.5f, x+0.5f-gridZ/4f,                     y, y, z+0.5f, z+0.5f+gridZ/2f,          lineColor[0], lineColor[1], lineColor[2]);   // to LT
+                                drawLine(consumer, stack, x+0.5f, x+0.5f+gridX/2f-gridZ/4f,            y, y, z+0.5f, z+0.5f,                   lineColor[0], lineColor[1], lineColor[2]);   // to R
+                                drawLine(consumer, stack, x+0.5f+gridX/2f-gridZ/4f, x+0.5f+gridX/2f,   y, y, z+0.5f, z+0.5f-gridZ/2f,          lineColor[0], lineColor[1], lineColor[2]);   // to RB
+                                drawLine(consumer, stack, x+0.5f+gridX/2f-gridZ/4f, x+0.5f+gridX/2f,   y, y, z+0.5f, z+0.5f+gridZ/2f,          lineColor[0], lineColor[1], lineColor[2]);   // to RT
                                 
-                                drawLine(consumer, stack, x+0.5f+gridX/2f, x+0.5f+gridX-gridZ/4f,      y, y, z+0.5f+gridZ/2f, z+0.5f+gridZ/2f, lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // left stump out
-                                drawLine(consumer, stack, x+0.5f-gridZ/4f, x+0.5f-gridX/2f,            y, y, z+0.5f+gridZ/2f, z+0.5f+gridZ/2f, lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // right stump out
+                                drawLine(consumer, stack, x+0.5f+gridX/2f, x+0.5f+gridX-gridZ/4f,      y, y, z+0.5f+gridZ/2f, z+0.5f+gridZ/2f, lineColor[0], lineColor[1], lineColor[2]);   // left stump out
+                                drawLine(consumer, stack, x+0.5f-gridZ/4f, x+0.5f-gridX/2f,            y, y, z+0.5f+gridZ/2f, z+0.5f+gridZ/2f, lineColor[0], lineColor[1], lineColor[2]);   // right stump out
                             } else {
-                                drawLine(consumer, stack, x+0.5f, x+0.5f-gridX/2f,          y, y, z+0.5f, z+0.5f-gridX/4f,                     lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to LT
-                                drawLine(consumer, stack, x+0.5f, x+0.5f+gridX/2f,          y, y, z+0.5f, z+0.5f-gridX/4f,                     lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to RT
-                                drawLine(consumer, stack, x+0.5f, x+0.5f,                   y, y, z+0.5f, z+0.5f+gridZ/2f-gridX/4f,            lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to B
-                                drawLine(consumer, stack, x+0.5f, x+0.5f-gridX/2f,          y, y, z+0.5f+gridZ/2f-gridX/4f, z+0.5f+gridZ/2f,   lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to LB
-                                drawLine(consumer, stack, x+0.5f, x+0.5f+gridX/2f,          y, y, z+0.5f+gridZ/2f-gridX/4f, z+0.5f+gridZ/2f,   lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // to RB
+                                drawLine(consumer, stack, x+0.5f, x+0.5f-gridX/2f,          y, y, z+0.5f, z+0.5f-gridX/4f,                     lineColor[0], lineColor[1], lineColor[2]);   // to LT
+                                drawLine(consumer, stack, x+0.5f, x+0.5f+gridX/2f,          y, y, z+0.5f, z+0.5f-gridX/4f,                     lineColor[0], lineColor[1], lineColor[2]);   // to RT
+                                drawLine(consumer, stack, x+0.5f, x+0.5f,                   y, y, z+0.5f, z+0.5f+gridZ/2f-gridX/4f,            lineColor[0], lineColor[1], lineColor[2]);   // to B
+                                drawLine(consumer, stack, x+0.5f, x+0.5f-gridX/2f,          y, y, z+0.5f+gridZ/2f-gridX/4f, z+0.5f+gridZ/2f,   lineColor[0], lineColor[1], lineColor[2]);   // to LB
+                                drawLine(consumer, stack, x+0.5f, x+0.5f+gridX/2f,          y, y, z+0.5f+gridZ/2f-gridX/4f, z+0.5f+gridZ/2f,   lineColor[0], lineColor[1], lineColor[2]);   // to RB
                                 
-                                drawLine(consumer, stack, x+0.5f+gridX/2f, x+0.5f+gridX/2f, y, y, z+0.5f+gridZ/2f, z+0.5f+gridZ-gridX/4f,      lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // stump up
-                                drawLine(consumer, stack, x+0.5f+gridX/2f, x+0.5f+gridX/2f, y, y, z+0.5f-gridX/4f, z+0.5f-gridZ/2f,            lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);   // stump down
+                                drawLine(consumer, stack, x+0.5f+gridX/2f, x+0.5f+gridX/2f, y, y, z+0.5f+gridZ/2f, z+0.5f+gridZ-gridX/4f,      lineColor[0], lineColor[1], lineColor[2]);   // stump up
+                                drawLine(consumer, stack, x+0.5f+gridX/2f, x+0.5f+gridX/2f, y, y, z+0.5f-gridX/4f, z+0.5f-gridZ/2f,            lineColor[0], lineColor[1], lineColor[2]);   // stump down
                             }
                         }
                     }
@@ -232,7 +235,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                             float dz=gridX/2.0f;
                             for (float nextx=0.1f; nextx<gridX; nextx+=0.1f) {
                                 float nextz=(float)(Math.sqrt(gridX*gridX/4.0-nextx*nextx));
-                                drawCircleSegment(consumer, stack, x, dx, nextx, y, z, dz, nextz, circleColor.getRed()/255f, circleColor.getGreen()/255f, circleColor.getBlue()/255f);
+                                drawCircleSegment(consumer, stack, x, dx, nextx, y, z, dz, nextz, circleColor[0], circleColor[1], circleColor[2]);
                                 dx=nextx;
                                 dz=nextz;
                                 if (nextz<nextx)
@@ -249,11 +252,11 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         }
         
         if (showSpawns) {
-            showSpawns(consumer, stack, player, baseX, baseZ);
+            showSpawns(consumer, stack, player, player.getBlockPos().getX(), player.getBlockPos().getZ());
         }
         
         if (showBiomes!=null) {
-            showBiomes(consumer, stack, player, baseX, baseZ);
+            showBiomes(consumer, stack, player, player.getBlockPos().getX(), player.getBlockPos().getZ());
         }
 
         stack.pop();
@@ -271,12 +274,13 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         if (spawnUpdateX < (baseX-distance) || spawnUpdateX > baseX+distance) {
             spawnUpdateX = baseX-distance;
         }
+        boolean alwaysUpdate = !ConfigurationHandler.getUseCache();
 
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
                 
                 int display = 0;
-                if (x == spawnUpdateX) {
+                if (alwaysUpdate || x == spawnUpdateX) {
                     if (cachedChunk == null || cachedChunk.getPos().x != (x>>4) || cachedChunk.getPos().z != (z>>4)) {
                         cachedChunk=player.world.getChunk(x>>4, z>>4);
                     }
@@ -312,15 +316,12 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                 }
 
                 if ((display & 0xf000) == 0x1000) {
-                    drawCross(consumer, stack, x, (display&0xfff)+1.05f, z, spawnNightColor.getRed()/255f, spawnNightColor.getGreen()/255f, spawnNightColor.getBlue()/255f, false );
-                } else if ((display & 0xf000) == 2) {
-                    drawCross(consumer, stack, x, (display&0xfff)+1.05f, z, spawnDayColor.getRed()/255f, spawnDayColor.getGreen()/255f, spawnDayColor.getBlue()/255f, true );
+                    drawCross(consumer, stack, x, (display&0xfff)+1.05f, z, spawnNightColor[0], spawnNightColor[1], spawnNightColor[2], false );
+                } else if ((display & 0xf000) == 0x2000) {
+                    drawCross(consumer, stack, x, (display&0xfff)+1.05f, z, spawnDayColor[0], spawnDayColor[1], spawnDayColor[2], true );
                 }
             }
         }
-    }
-    
-    private void drawCrossIfSpawnable(MatrixStack stack, VertexConsumer consumer, World world, BlockPos pos) {
     }
     
     private void showBiomes(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
@@ -328,36 +329,40 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         int maxy=(int)(player.getY());
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
-        int updateCount = 0;
-        int updatemsec = ConfigurationHandler.getCacheUpdateSeconds()*1000;
         MutableRegistry<Biome> registry = player.world.getRegistryManager().get(Registry.BIOME_KEY);
+        
+        biomeUpdateX++;
+        if (biomeUpdateX < (baseX-distance) || biomeUpdateX > baseX+distance) {
+            biomeUpdateX = baseX-distance;
+        }
+        boolean alwaysUpdate = !ConfigurationHandler.getUseCache();
+        
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
-                BiomeDisplayEntry entry = new BiomeDisplayEntry(x, z, false, 0, 0l);
-                BiomeDisplayEntry cache = biomeCache.get(entry);
-                if (cache == null
-                || cache.generated < System.currentTimeMillis() - updatemsec && ++updateCount < 256) {
-                    if (cache == null && updatemsec > 0) {
-                        biomeCache.put(entry, entry);
-                        cache = entry;
+                int display = 0;
+                if (alwaysUpdate || x == biomeUpdateX) {
+                    boolean match = showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z))).getPath()).find();
+                    if (match) {
+                        int y=(int)(player.getY());
+                        while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
+                            y--;
+                        }
+                        display = 0x1000 + y;
+                    } else {
+                        display = 0;
                     }
-                    cache.display = showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z))).getPath()).find();
-                    int y=(int)(player.getY());
-                    while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
-                        y--;
-                    }
-                    cache.displayHeight = y;
-                    cache.generated = System.currentTimeMillis();
-                    
+                    biomeCache[x&0xff][z&0xff] = display;
+                } else {
+                    display = biomeCache[x&0xff][z&0xff];
                 }
-                if (cache.display) {
+                if ((display & 0x1000) != 0) {
                     int y;
                     if (fixY == -1) {
-                        y=cache.displayHeight;
+                        y=display & 0xfff;
                     } else {
                         y=fixY-1;
                     }
-                    drawDiamond(consumer, stack, x, y+1, z, biomeColor.getRed()/255f, biomeColor.getGreen()/255f, biomeColor.getBlue()/255f);
+                    drawDiamond(consumer, stack, x, y+1, z, biomeColor[0], biomeColor[1], biomeColor[2]);
                 }
             }
         }
@@ -369,10 +374,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     
     private void drawLineGrid(VertexConsumer consumer, MatrixStack stack, int baseX, int baseZ, float y, int sizeX, int sizeZ) {
         for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
-            drawLine(consumer, stack, x, x, y, y, baseZ-distance, baseZ+distance, lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);
+            drawLine(consumer, stack, x, x, y, y, baseZ-distance, baseZ+distance, lineColor[0], lineColor[1], lineColor[2]);
         }
         for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
-            drawLine(consumer, stack, baseX-distance, baseX+distance, y, y, z, z, lineColor.getRed()/255f, lineColor.getGreen()/255f, lineColor.getBlue()/255f);
+            drawLine(consumer, stack, baseX-distance, baseX+distance, y, y, z, z, lineColor[0], lineColor[1], lineColor[2]);
         }
     }
     
@@ -427,14 +432,25 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     
     private void drawDiamond(VertexConsumer consumer, MatrixStack stack, int x, int y, int z, float red, float green, float blue) {
         Matrix4f model = stack.peek().getModel();
-        consumer.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x+0.5f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x+0.5f, y+0.05f, z+0.3f).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x+0.7f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x+0.7f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x+0.5f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x+0.5f, y+0.05f, z+0.7f).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x+0.3f, y+0.05f, z+0.5f).color(red, green, blue, 1.0f).next();
+        float x1 = x+0.3f;
+        float x2 = x+0.5f;
+        float x3 = x+0.7f;
+        float z1 = z+0.3f;
+        float z2 = z+0.5f;
+        float z3 = z+0.7f;
+        float y1 = y+0.05f;
+
+        consumer.vertex(model, x1, y1, z2).color(red, green, blue, 1.0f).next();
+        consumer.vertex(model, x2, y1, z1).color(red, green, blue, 1.0f).next();
+        
+        consumer.vertex(model, x2, y1, z1).color(red, green, blue, 1.0f).next();
+        consumer.vertex(model, x3, y1, z2).color(red, green, blue, 1.0f).next();
+        
+        consumer.vertex(model, x3, y1, z2).color(red, green, blue, 1.0f).next();
+        consumer.vertex(model, x2, y1, z3).color(red, green, blue, 1.0f).next();
+        
+        consumer.vertex(model, x2, y1, z3).color(red, green, blue, 1.0f).next();
+        consumer.vertex(model, x1, y1, z2).color(red, green, blue, 1.0f).next();
     }
     
     private void cmdShow(ClientPlayerEntity sender) {
@@ -556,7 +572,6 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     }
     
     private void cmdBiome(ClientPlayerEntity sender, String biome) {
-        biomeCache = new HashMap<>();
         if (biome == null  || biome.isEmpty()) {
             showBiomes = null;
         } else {
