@@ -87,7 +87,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     private long lastDumpTime, thisDumpTime;
     
     private Map<BiomeDisplayEntry, BiomeDisplayEntry> biomeCache;
-    private Map<BlockPos, SpawnDisplayEntry> spawnCache;
+    private int[][] spawnCache;
+    int spawnUpdateX;
 
     @Override
     public void onInitializeClient() {
@@ -103,7 +104,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         biomeColor = new Color(confHandler.biomeColor);
         
         biomeCache = new HashMap<>();
-        spawnCache = new HashMap<>();
+        spawnCache = new int[256][];
+        for (int i=0; i<256; i++) {
+            spawnCache[i]=new int[256];
+        }
 
         setKeyBindings();
         LOGGER = LogManager.getLogger(MODNAME);
@@ -260,31 +264,25 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         int maxy=(int)(player.getY())+2;
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
-        int updateCount = 0;
-        int updatemsec = ConfigurationHandler.getCacheUpdateSeconds()*1000;
 
         WorldChunk cachedChunk = null;
 
+        spawnUpdateX++;
+        if (spawnUpdateX < (baseX-distance) || spawnUpdateX > baseX+distance) {
+            spawnUpdateX = baseX-distance;
+        }
+
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
-                if (cachedChunk == null || cachedChunk.getPos().x != (x>>4) || cachedChunk.getPos().z != (z>>4)) {
-                    cachedChunk=player.world.getChunk(x>>4, z>>4);
-                }
-                for (int y=maxy; y>=miny; y--) {
-                    BlockState state;
-                    BlockPos pos=new BlockPos(x, y, z);
-
-                    SpawnDisplayEntry entry = new SpawnDisplayEntry(x, y, z, 0, 0);
-                    SpawnDisplayEntry cache = spawnCache.get(pos);
-                    //if (x==baseX && z==baseZ) { System.out.println("got "+cache+" at y= "+y); }
-                    if (cache == null
-                    || cache.generated < System.currentTimeMillis() - updatemsec && ++updateCount < 256) {
-                        if (cache == null && updatemsec > 0) {
-                            spawnCache.put(pos, entry);
-                            cache = entry;
-                        }
-                        cache.generated = System.currentTimeMillis();
-                        cache.display = -1;
+                
+                int display = 0;
+                if (x == spawnUpdateX) {
+                    if (cachedChunk == null || cachedChunk.getPos().x != (x>>4) || cachedChunk.getPos().z != (z>>4)) {
+                        cachedChunk=player.world.getChunk(x>>4, z>>4);
+                    }
+                    for (int y=maxy; y>=miny; y--) {
+                        BlockState state;
+                        BlockPos pos=new BlockPos(x, y, z);
 
                         ChunkSection section = cachedChunk.getSectionArray()[y>>4];
                         if (section == null || section.isEmpty()) {
@@ -298,24 +296,25 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                                 BlockPos up = pos.up();
                                 if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, up, EntityType.COD)) {
                                     if (player.world.getLightLevel(LightType.BLOCK, up)>=lightLevel)
-                                        cache.display = 0;
+                                        display = 0x0000 | y;
                                     else if (player.world.getLightLevel(LightType.SKY, up)>=lightLevel)
-                                        cache.display = 1;
+                                        display = 0x1000 | y;
                                     else
-                                        cache.display = 2;
+                                        display = 0x2000 | y;
                                 }
                             }
-                            //if (x==baseX && z==baseZ) System.out.println("after check: "+cache);
+                            break;
                         }
                     }
-                    if (cache.display == 1) {
-                        drawCross(consumer, stack, pos.getX(), pos.getY()+1.05f, pos.getZ(), spawnNightColor.getRed()/255f, spawnNightColor.getGreen()/255f, spawnNightColor.getBlue()/255f, false );
-                    } else if (cache.display == 2) {
-                        drawCross(consumer, stack, pos.getX(), pos.getY()+1.05f, pos.getZ(), spawnDayColor.getRed()/255f, spawnDayColor.getGreen()/255f, spawnDayColor.getBlue()/255f, true );
-                    }
-                    if (cache.display != -1 && fastSpawnCheck) {
-                        break;
-                    }
+                    spawnCache[x&0xff][z&0xff] = display;
+                } else {
+                    display = spawnCache[x&0xff][z&0xff];
+                }
+
+                if ((display & 0xf000) == 0x1000) {
+                    drawCross(consumer, stack, x, (display&0xfff)+1.05f, z, spawnNightColor.getRed()/255f, spawnNightColor.getGreen()/255f, spawnNightColor.getBlue()/255f, false );
+                } else if ((display & 0xf000) == 2) {
+                    drawCross(consumer, stack, x, (display&0xfff)+1.05f, z, spawnDayColor.getRed()/255f, spawnDayColor.getGreen()/255f, spawnDayColor.getBlue()/255f, true );
                 }
             }
         }
@@ -449,7 +448,6 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     }
     
     private void cmdSpawns(ClientPlayerEntity sender, String newLevel) {
-        spawnCache = new HashMap<>();
         int level=8;
         try {
             level=Integer.parseInt(newLevel);
