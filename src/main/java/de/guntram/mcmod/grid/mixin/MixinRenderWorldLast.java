@@ -1,6 +1,5 @@
 package de.guntram.mcmod.grid.mixin;
 
-import de.guntram.mcmod.grid.Grid;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,7 +21,6 @@ public abstract class MixinRenderWorldLast {
 //    @Inject(method="renderWorld", at=@At("RETURN"))
     
     private void onRenderWorldLast(float partialTicks, long nanoTime, MatrixStack stack, CallbackInfo ci) {
-//    private void onRenderWorldLast(CallbackInfo ci) {
-        Grid.instance.renderOverlay(partialTicks, stack);
+        // Grid.instance.renderOverlay(partialTicks, stack);
     }
 }
