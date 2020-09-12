@@ -90,12 +90,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         ConfigurationProvider.register(MODNAME, confHandler);
         confHandler.load(ConfigurationProvider.getSuggestedFile(MODID));
         
-        blockColor =        colorToRgb(confHandler.blockColor);
-        lineColor  =        colorToRgb(confHandler.lineColor);
-        circleColor=        colorToRgb(confHandler.circleColor);
-        spawnNightColor =   colorToRgb(confHandler.spawnNightColor);
-        spawnDayColor =     colorToRgb(confHandler.spawnDayColor);
-        biomeColor =        colorToRgb(confHandler.biomeColor);
+
         
         biomeCache = new int[256][];
         spawnCache = new int[256][];
@@ -120,6 +115,14 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         
         if (!showGrid && !showSpawns && showBiomes == null)
             return;
+        
+        ConfigurationHandler confHandler = ConfigurationHandler.getInstance();
+        blockColor =        colorToRgb(confHandler.blockColor);
+        lineColor  =        colorToRgb(confHandler.lineColor);
+        circleColor=        colorToRgb(confHandler.circleColor);
+        spawnNightColor =   colorToRgb(confHandler.spawnNightColor);
+        spawnDayColor =     colorToRgb(confHandler.spawnDayColor);
+        biomeColor =        colorToRgb(confHandler.biomeColor);
 
         Entity player = MinecraftClient.getInstance().getCameraEntity();
         stack.push();

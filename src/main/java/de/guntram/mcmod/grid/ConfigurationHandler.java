@@ -35,6 +35,18 @@ public class ConfigurationHandler implements ModConfigurationHandler {
             loadConfig();
         }
     }
+
+    @Override
+    public void onConfigChanging(ConfigChangedEvent.OnConfigChangingEvent event) {
+        switch (event.getItem()) {
+            case "grid.config.colorblock"      : blockColor         = (int) event.getNewValue(); break;
+            case "grid.config.colorline"       : lineColor          = (int) event.getNewValue(); break;
+            case "grid.config.colorcircle"     : circleColor        = (int) event.getNewValue(); break;
+            case "grid.config.colorspawnnight" : spawnNightColor    = (int) event.getNewValue(); break;
+            case "grid.config.colorspawnday"   : spawnDayColor      = (int) event.getNewValue(); break;
+            case "grid.config.colorbiome"      : biomeColor         = (int) event.getNewValue(); break;
+        }
+    }
     
     private void loadConfig() {
         
