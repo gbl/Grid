@@ -5,7 +5,15 @@ import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
+import de.guntram.mcmod.fabrictools.ConfigChangedEvent;
+import de.guntram.mcmod.fabrictools.Configuration;
+import de.guntram.mcmod.fabrictools.ConfigurationItem;
 import de.guntram.mcmod.fabrictools.ConfigurationProvider;
+import de.guntram.mcmod.fabrictools.GuiModOptions;
+import de.guntram.mcmod.fabrictools.IConfiguration;
+import de.guntram.mcmod.fabrictools.ModConfigurationHandler;
+import de.guntram.mcmod.fabrictools.Types.ConfigurationSelectList;
+import de.guntram.mcmod.fabrictools.VolatileConfiguration;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.argument;
 import static io.github.cottonmc.clientcommands.ArgumentBuilders.literal;
 import io.github.cottonmc.clientcommands.ClientCommandPlugin;
@@ -42,10 +50,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_B;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_C;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_G;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_L;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_Y;
 
-public class Grid implements ClientModInitializer, ClientCommandPlugin
+public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfigurationHandler
 {
     static final String MODID="grid";
     static final String MODNAME="Grid";
@@ -73,8 +82,12 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
     private float[] spawnNightColor = colorToRgb(0xffff00);
     private float[] spawnDayColor   = colorToRgb(0xff0000);
     private float[] biomeColor      = colorToRgb(0xff00ff);
+    
+    private static final String modes[] = { "grid.displaymode.rectangle", "grid.displaymode.circle", "grid.displaymode.hex" };
+    VolatileConfiguration runtimeSettings;
+    private boolean settingsRequested;
 
-    KeyBinding showHide, gridHere, gridFixY, gridSpawns;
+    KeyBinding showHide, gridHere, gridFixY, gridSpawns, gridSettings;
     
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
@@ -89,9 +102,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         ConfigurationHandler confHandler = ConfigurationHandler.getInstance();
         ConfigurationProvider.register(MODNAME, confHandler);
         confHandler.load(ConfigurationProvider.getSuggestedFile(MODID));
-        
 
-        
         biomeCache = new int[256][];
         spawnCache = new int[256][];
         for (int i=0; i<256; i++) {
@@ -593,6 +604,34 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
             }
         }
     }
+    
+    private void cmdSettings() {
+
+        runtimeSettings = new VolatileConfiguration();
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.x", "", gridX, gridX, 0, 64, (val) -> gridX=(int) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.z", "", gridZ, gridZ, 0, 64, (val) -> gridZ=(int) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.y", "", fixY, fixY, -1, 255, (val) -> fixY =(int) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.distance", "", distance, 30, 16, 255, (val) -> distance=(int) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.lightlevel", "", lightLevel, 8, 1, 15, (val) -> lightLevel=(int) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.showgrid", "", showGrid, false, null, null, (val) -> showGrid=(boolean) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.isblocks", "", isBlocks, true, null, null, (val) -> isBlocks=(boolean) val));
+        runtimeSettings.addItem(new ConfigurationSelectList("grid.settings.displaymode", "", modes, 0 + (isCircles ? 1 : 0) + (isHexes ? 2 : 0), 0, (val) -> {
+            isCircles = ((int)val == 1); isHexes = ((int)val == 2); 
+        }));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.showspawn", "", showSpawns, false, null, null, (val) -> showSpawns = (boolean) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.showbiomes", "", (showBiomes != null ? showBiomes.pattern() : ""), "", null, null,
+                (val) -> instance.cmdBiome(MinecraftClient.getInstance().player, (String) val)));
+        
+        GuiModOptions screen = new GuiModOptions(null, "Grid Settings", this) {
+            @Override
+            public void renderBackground(MatrixStack matrices, int vOffset) {
+                if (this.client.world == null) {
+                    super.renderBackground(matrices, vOffset);
+                }
+            }
+        };
+        MinecraftClient.getInstance().openScreen(screen);
+    }
 
     @Override
     public void registerCommands(CommandDispatcher<CottonClientCommandSource> cd) {
@@ -698,6 +737,14 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
                         return 1;
                     })
                 )
+                .then (
+                    literal("settings").executes(c->{
+                        // This can't open the settings screen directly because
+                        // MC will call closeScreen to close the chat hud.
+                        instance.settingsRequested = true;
+                        return 1;
+                    })
+                )
         );
     }
 
@@ -707,6 +754,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         KeyBindingHelper.registerKeyBinding(gridHere = new KeyBinding("key.grid.here", InputUtil.Type.KEYSYM, GLFW_KEY_C, category));
         KeyBindingHelper.registerKeyBinding(gridFixY = new KeyBinding("key.grid.fixy", InputUtil.Type.KEYSYM, GLFW_KEY_Y, category));
         KeyBindingHelper.registerKeyBinding(gridSpawns = new KeyBinding("key.grid.spawns", InputUtil.Type.KEYSYM, GLFW_KEY_L, category));
+        KeyBindingHelper.registerKeyBinding(gridSettings = new KeyBinding("key.grid.settings", InputUtil.Type.KEYSYM, GLFW_KEY_G, category));
         ClientTickEvents.END_CLIENT_TICK.register(e->processKeyBinds());
     }
 
@@ -724,5 +772,24 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin
         if (gridSpawns.wasPressed()) {
             cmdSpawns(player, null);
         }
+        if (settingsRequested || gridSettings.wasPressed()) {
+            settingsRequested = false;
+            cmdSettings();
+        }
+    }
+
+    @Override
+    public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent occe) {
+    }
+
+    @Override
+    public IConfiguration getIConfig() {
+        return runtimeSettings;
+    }
+
+    @Override
+    public Configuration getConfig() {
+        // This is only for compatibility with older GBFabricTools versions
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }
