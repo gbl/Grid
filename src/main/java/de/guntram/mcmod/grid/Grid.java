@@ -5,6 +5,7 @@ import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
+import de.guntram.mcmod.crowdintranslate.CrowdinTranslate;
 import de.guntram.mcmod.fabrictools.ConfigChangedEvent;
 import de.guntram.mcmod.fabrictools.Configuration;
 import de.guntram.mcmod.fabrictools.ConfigurationItem;
@@ -98,6 +99,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfi
 
     @Override
     public void onInitializeClient() {
+        CrowdinTranslate.downloadTranslations(MODID);
         instance=this;
         ConfigurationHandler confHandler = ConfigurationHandler.getInstance();
         ConfigurationProvider.register(MODNAME, confHandler);
@@ -610,7 +612,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfi
         runtimeSettings = new VolatileConfiguration();
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.x", "", gridX, gridX, 0, 64, (val) -> gridX=(int) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.z", "", gridZ, gridZ, 0, 64, (val) -> gridZ=(int) val));
-        runtimeSettings.addItem(new ConfigurationItem("grid.settings.y", "", fixY, fixY, -1, 255, (val) -> fixY =(int) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.y", "", fixY, fixY, -2, 255, (val) -> fixY =(int) val));           // Min is actually -1 but due to how rounding negatives work we need -2 to have -1 shown.
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.distance", "", distance, 30, 16, 255, (val) -> distance=(int) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.lightlevel", "", lightLevel, 8, 1, 15, (val) -> lightLevel=(int) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.showgrid", "", showGrid, false, null, null, (val) -> showGrid=(boolean) val));
