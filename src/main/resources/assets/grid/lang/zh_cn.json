@@ -4,6 +4,7 @@
     "key.grid.here": "以玩家为中心对齐网格",
     "key.grid.fixy": "网格固定在当前高度",
     "key.grid.spawns": "显示 / 隐藏刷怪提示",
+    "key.grid.settings": "Change ingame settings",
     "msg.gridshown": "网格已显示。",
     "msg.gridhidden": "网格已隐藏。",
     "msg.gridlines": "网格正以直线显示。",

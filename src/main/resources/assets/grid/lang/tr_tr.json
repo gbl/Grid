@@ -4,6 +4,7 @@
     "key.grid.here": "Izgarayı oyuncunun yerine hizala",
     "key.grid.fixy": "Izgara yüksekliğini oyuncuya sabitle",
     "key.grid.spawns": "Doğma bloklarını göster/gizle",
+    "key.grid.settings": "Change ingame settings",
     "msg.gridshown": "Grid (Izgara) gösterildi.",
     "msg.gridhidden": "Grid (Izgara) gizlendi.",
     "msg.gridlines": "Grid, çizgileri gösteriyor.",

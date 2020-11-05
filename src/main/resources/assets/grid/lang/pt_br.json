@@ -4,6 +4,7 @@
     "key.grid.here": "Alinhar grade em volta do jogador",
     "key.grid.fixy": "Fixar grade na altura do jogador",
     "key.grid.spawns": "Exibir/Ocultar blocos do spawn",
+    "key.grid.settings": "Change ingame settings",
     "msg.gridshown": "Grade exibida.",
     "msg.gridhidden": "Grade ocultada.",
     "msg.gridlines": "Grade exibindo linhas.",

@@ -4,6 +4,7 @@
     "key.grid.here": "Выровнять сетку вокруг игрока",
     "key.grid.fixy": "Исправить высоту сетки для игрока",
     "key.grid.spawns": "Показать/Скрыть блоки спавна",
+    "key.grid.settings": "Change ingame settings",
     "msg.gridshown": "Сетка показывается.",
     "msg.gridhidden": "Сетка скрыта.",
     "msg.gridlines": "Сетка показывает линии.",
