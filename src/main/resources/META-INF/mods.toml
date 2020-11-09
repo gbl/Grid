@@ -1,5 +1,5 @@
 modLoader="javafml" #mandatory
-loaderVersion="[33,)" #mandatory (28 is current forge version)
+loaderVersion="[35,)" #mandatory (28 is current forge version)
 issueTrackerURL="https://github.com/gbl/Grid/issues"
 license="MIT License"
 [[mods]]
@@ -17,13 +17,13 @@ Show Markers to help with counting blocks, building hexes and circles, and showi
 [[dependencies.grid]] #optional
     modId="forge"
     mandatory=true
-    versionRange="[33,)"
+    versionRange="[35,)"
     ordering="NONE"
     side="CLIENT"
 
 [[dependencies.grid]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.16.2,)"
+    versionRange="[1.16.4,)"
     ordering="NONE"
     side="CLIENT"

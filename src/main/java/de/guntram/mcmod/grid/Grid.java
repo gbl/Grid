@@ -318,7 +318,7 @@ public class Grid
         int maxy=(int)(player.getPosY());
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
-        MutableRegistry<Biome> registry = player.world.func_241828_r().func_243612_b(Registry.field_239720_u_);
+        MutableRegistry<Biome> registry = player.world.func_241828_r().getRegistry(Registry.BIOME_KEY);
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
                 if (showBiomes.matcher(registry.getKey(player.world.getBiome(new BlockPos(x, 1, z))).getPath()).find()) {
