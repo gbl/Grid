@@ -34,7 +34,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 ext.Versions = new Properties()
-Versions.load(file("Versionfiles/mcversion-1.16.4.properties").newReader())
+Versions.load(file("Versionfiles/mcversion-20w46a.properties").newReader())
 
 archivesBaseName = "grid"
 ext.projectVersion = "1.6.3"
