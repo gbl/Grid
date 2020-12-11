@@ -26,7 +26,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.I18n;
@@ -36,6 +39,7 @@ import net.minecraft.entity.EntitySpawnPlacementRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Matrix4f;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.StringTextComponent;
@@ -45,6 +49,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.spawner.WorldEntitySpawner;
 import net.minecraftforge.client.event.ClientChatEvent;
+import net.minecraftforge.client.event.DrawHighlightEvent;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -155,6 +160,24 @@ public class Grid implements ModConfigurationHandler
         // This should not be Tessellator.getInstance().getBuffer(); this should be the buffer from RenderLayer().getLines() like in Fabric.
         renderOverlay(e.getPartialTicks(), e.getMatrixStack(), b);
         Tessellator.getInstance().draw();
+    }
+    
+    @SubscribeEvent
+    // And this is what we'd need to use to get rid of the fabulous graphics
+    // problem - but unfortunately, we only get that event when there's a block
+    // outline to draw; and there doesn't seem to be any other event
+    // in WorldRenderer.
+    public void onRender(DrawHighlightEvent.HighlightBlock event) {
+        if (false) {
+            ActiveRenderInfo camera = event.getInfo();
+            Vector3d vec3d = camera.getProjectedView();
+            double x = vec3d.getX();
+            double y = vec3d.getY();
+            double z = vec3d.getZ();
+            IRenderTypeBuffer immediate = event.getBuffers();
+            IVertexBuilder consumer = immediate.getBuffer(RenderType.getLines());
+            renderOverlay(event.getPartialTicks(), event.getMatrix(), consumer/* , x, y, z */);
+        }
     }
     
     public void renderOverlay(float partialTicks, MatrixStack stack, IVertexBuilder consumer) {
