@@ -93,7 +93,7 @@ import com.modrinth.minotaur.TaskModrinthUpload
 task publishModrinth (type: TaskModrinthUpload){
 
     token = System.getenv("MODRINTH_TOKEN")
-    projectId = 'Bta0Pt47'
+    projectId = 'ebxDDOKt'
     versionNumber = project.version
     versionName = project.archivesBaseName
     releaseType = 'release'
