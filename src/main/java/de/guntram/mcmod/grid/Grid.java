@@ -40,7 +40,6 @@ import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Matrix4f;
-import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.LightType;
 import net.minecraft.world.SpawnHelper;
@@ -351,8 +350,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfi
         int maxy=(int)(player.getY());
         if (miny<0) { miny=0; }
         if (maxy>255) { maxy=255; }
-        MutableRegistry<Biome> registry = player.world.getRegistryManager().get(Registry.BIOME_KEY);
-        
+        Registry<Biome> registry = player.world.getRegistryManager().get(Registry.BIOME_KEY);
+
         biomeUpdateX++;
         if (biomeUpdateX < (baseX-distance) || biomeUpdateX > baseX+distance) {
             biomeUpdateX = baseX-distance;
