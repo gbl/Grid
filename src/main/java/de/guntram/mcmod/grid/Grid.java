@@ -610,8 +610,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfi
     private void cmdSettings() {
 
         runtimeSettings = new VolatileConfiguration();
-        runtimeSettings.addItem(new ConfigurationItem("grid.settings.x", "", gridX, gridX, 0, 64, (val) -> gridX=(int) val));
-        runtimeSettings.addItem(new ConfigurationItem("grid.settings.z", "", gridZ, gridZ, 0, 64, (val) -> gridZ=(int) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.x", "", gridX, gridX, 1, 64, (val) -> gridX=(int) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.z", "", gridZ, gridZ, 1, 64, (val) -> gridZ=(int) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.y", "", fixY, fixY, -2, 255, (val) -> fixY =(int) val));           // Min is actually -1 but due to how rounding negatives work we need -2 to have -1 shown.
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.distance", "", distance, 30, 16, 255, (val) -> distance=(int) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.lightlevel", "", lightLevel, 8, 1, 15, (val) -> lightLevel=(int) val));
