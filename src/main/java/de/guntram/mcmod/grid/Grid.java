@@ -29,7 +29,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.InputUtil;
