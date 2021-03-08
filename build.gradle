@@ -26,8 +26,7 @@ repositories {
 		url = "https://minecraft.guntram.de/maven/"
 	}
 	maven {
-        	name = 'CottonMC'
-	        url = 'https://server.bbkr.space/artifactory/libs-release'
+		url = "https://maven.terraformersmc.com/releases/"
 	}    
 }
 
@@ -38,7 +37,7 @@ ext.Versions = new Properties()
 Versions.load(file("Versionfiles/mcversion-21w08b.properties").newReader())
 
 archivesBaseName = "grid"
-ext.projectVersion = "1.6.4"
+ext.projectVersion = "1.6.5"
 
 version = "${Versions['minecraft_version']}-fabric${Versions['fabric_versiononly']}-${project.projectVersion}"
 
@@ -49,7 +48,7 @@ minecraft {
 processResources {
 	inputs.property "version", project.version
 
-    from(sourceSets.main.resources.srcDirs) {
+	from(sourceSets.main.resources.srcDirs) {
 		include "fabric.mod.json"
 		expand "version": project.version
 	}
@@ -63,9 +62,7 @@ dependencies {
     mappings   "net.fabricmc:yarn:${Versions['yarn_mappings']}:v2"
     modImplementation "net.fabricmc:fabric-loader:${Versions['loader_version']}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${Versions['fabric_version']}"
-    modImplementation "io.github.prospector:modmenu:${Versions['modmenu_version']}"
-    modImplementation "io.github.cottonmc:cotton-client-commands:${Versions['ccc_version']}"
-    include    "io.github.cottonmc:cotton-client-commands:${Versions['ccc_version']}"
+    modImplementation "com.terraformersmc:modmenu:${Versions['modmenu_version']}"
     modImplementation "de.guntram.mcmod:GBfabrictools:${Versions['gbfabrictools_version']}"
     include    "de.guntram.mcmod:GBfabrictools:${Versions['gbfabrictools_version']}"
     modImplementation "de.guntram.mcmod:crowdin-translate:${Versions['crowdintranslate_version']}"

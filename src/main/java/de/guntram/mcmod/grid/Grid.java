@@ -1,6 +1,5 @@
 package de.guntram.mcmod.grid;
 
-import com.mojang.brigadier.CommandDispatcher;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
@@ -15,13 +14,12 @@ import de.guntram.mcmod.fabrictools.IConfiguration;
 import de.guntram.mcmod.fabrictools.ModConfigurationHandler;
 import de.guntram.mcmod.fabrictools.Types.ConfigurationSelectList;
 import de.guntram.mcmod.fabrictools.VolatileConfiguration;
-import static io.github.cottonmc.clientcommands.ArgumentBuilders.argument;
-import static io.github.cottonmc.clientcommands.ArgumentBuilders.literal;
-import io.github.cottonmc.clientcommands.ClientCommandPlugin;
-import io.github.cottonmc.clientcommands.CottonClientCommandSource;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v1.ClientCommandManager;
+import static net.fabricmc.fabric.api.client.command.v1.ClientCommandManager.argument;
+import static net.fabricmc.fabric.api.client.command.v1.ClientCommandManager.literal;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.block.Block;
@@ -35,16 +33,12 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.LightType;
-import net.minecraft.world.SpawnHelper;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +48,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_G;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_L;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_Y;
 
-public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfigurationHandler
+public class Grid implements ClientModInitializer, ModConfigurationHandler
 {
     static final String MODID="grid";
     static final String MODNAME="Grid";
@@ -112,6 +106,7 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfi
         }
 
         setKeyBindings();
+        registerCommands();
         LOGGER = LogManager.getLogger(MODNAME);
     }
     
@@ -280,8 +275,10 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfi
     private void showSpawns(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
         int miny=(int)(player.getY())-64;
         int maxy=(int)(player.getY())+2;
-        if (miny<0) { miny=0; }
-        if (maxy>255) { maxy=255; }
+        
+        player.world.countVerticalSections();
+        if (miny<player.world.getBottomY()) { miny=player.world.getBottomY(); }
+        if (maxy>player.world.getTopY()-1) { maxy=player.world.getTopY()-1; }
 
         WorldChunk cachedChunk = null;
 
@@ -304,25 +301,22 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfi
 
                         BlockState state;
                         BlockPos pos=new BlockPos(x, y, z);
-
-                        ChunkSection section = cachedChunk.getSectionArray()[y>>4];
-                        if (section == null || section.isEmpty()) {
-                            //if (x==baseX && z==baseZ) System.out.println("section is empty for "+y);
-                            continue;
-                        } else {
-                            state = section.getBlockState(x & 15, y & 15, z & 15);
-                        }
+                        state = cachedChunk.getBlockState(pos);
+                        /* if (x == 322 && z == 38) {
+                            System.out.printf("At 322/38 y=%d, foundAir=%s, state=%s, isSolid=%s\n",
+                                    y, ((Boolean)foundAir).toString(), state.getBlock().getName().getString(), state.isSolidBlock(player.world, pos));
+                        } */
                         if (state.isSolidBlock(player.world, pos)) {
                             if (foundAir && y != maxy) {
                                 BlockPos up = pos.up();
-                                if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, up, EntityType.COD)) {
+                                // if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, up, EntityType.CREEPER)) {
                                     if (player.world.getLightLevel(LightType.BLOCK, up)>=lightLevel)
                                         display = 0x0000 | y;
                                     else if (player.world.getLightLevel(LightType.SKY, up)>=lightLevel)
                                         display = 0x1000 | y;
                                     else
                                         display = 0x2000 | y;
-                                }
+                                // }
                             }
                             if (foundAir) {
                                 break;
@@ -634,9 +628,8 @@ public class Grid implements ClientModInitializer, ClientCommandPlugin, ModConfi
         MinecraftClient.getInstance().openScreen(screen);
     }
 
-    @Override
-    public void registerCommands(CommandDispatcher<CottonClientCommandSource> cd) {
-        cd.register(
+    public void registerCommands() {
+        ClientCommandManager.DISPATCHER.register(
             literal("grid")
                 .then(
                     literal("show").executes(c->{
