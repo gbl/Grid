@@ -35,6 +35,8 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.LightType;
@@ -397,10 +399,10 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     }
     
     private void drawSquare(VertexConsumer consumer, MatrixStack stack, float x, float y, float z, float r, float g, float b) {
-        drawLine (consumer, stack, x+0.3f, x+0.7f, y, y, z+0.3f, z+0.3f, r, g, b);
-        drawLine (consumer, stack, x+0.7f, x+0.7f, y, y, z+0.3f, z+0.7f, r, g, b);
-        drawLine (consumer, stack, x+0.7f, x+0.3f, y, y, z+0.7f, z+0.7f, r, g, b);
-        drawLine (consumer, stack, x+0.3f, x+0.3f, y, y, z+0.7f, z+0.3f, r, g, b);
+        drawLine(consumer, stack, x+0.3f, x+0.7f, y, y, z+0.3f, z+0.3f, r, g, b);
+        drawLine(consumer, stack, x+0.7f, x+0.7f, y, y, z+0.3f, z+0.7f, r, g, b);
+        drawLine(consumer, stack, x+0.7f, x+0.3f, y, y, z+0.7f, z+0.7f, r, g, b);
+        drawLine(consumer, stack, x+0.3f, x+0.3f, y, y, z+0.7f, z+0.3f, r, g, b);
     }
     
     private void drawXTriangleVertex(VertexConsumer consumer, MatrixStack stack, float x, float y, float z, boolean inverted, float r, float g, float b) {
@@ -434,8 +436,20 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
             System.out.println("line from "+x1+","+y1+","+z1+" to "+x2+","+y2+","+z2);
         }
         Matrix4f model = stack.peek().getModel();
-        consumer.vertex(model, x1, y1, z1).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x2, y2, z2).color(red, green, blue, 1.0f).next();
+        Matrix3f normal = stack.peek().getNormal();
+        
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        float dz = z2 - z1;
+        float dist = MathHelper.sqrt(dx*dx + dy*dy + dz*dz);
+        if (dist > 0.001) {
+            dx /= dist;
+            dy /= dist;
+            dz /= dist;
+        }
+        
+        consumer.vertex(model, x1, y1, z1).color(red, green, blue, 1.0f).normal(normal, dx, dy, dz).next();
+        consumer.vertex(model, x2, y2, z2).color(red, green, blue, 1.0f).normal(normal, dx, dy, dz).next();
     }
     
     private void drawCross(VertexConsumer consumer, MatrixStack stack, float x, float y, float z, float red, float green, float blue, boolean twoLegs) {
@@ -446,7 +460,6 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     }
     
     private void drawDiamond(VertexConsumer consumer, MatrixStack stack, int x, int y, int z, float red, float green, float blue) {
-        Matrix4f model = stack.peek().getModel();
         float x1 = x+0.3f;
         float x2 = x+0.5f;
         float x3 = x+0.7f;
@@ -454,18 +467,11 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         float z2 = z+0.5f;
         float z3 = z+0.7f;
         float y1 = y+0.05f;
-
-        consumer.vertex(model, x1, y1, z2).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x2, y1, z1).color(red, green, blue, 1.0f).next();
         
-        consumer.vertex(model, x2, y1, z1).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x3, y1, z2).color(red, green, blue, 1.0f).next();
-        
-        consumer.vertex(model, x3, y1, z2).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x2, y1, z3).color(red, green, blue, 1.0f).next();
-        
-        consumer.vertex(model, x2, y1, z3).color(red, green, blue, 1.0f).next();
-        consumer.vertex(model, x1, y1, z2).color(red, green, blue, 1.0f).next();
+        drawLine(consumer, stack, x1, x2, y1, y1, z2, z1, red, green, blue);
+        drawLine(consumer, stack, x2, x3, y1, y1, z1, z2, red, green, blue);
+        drawLine(consumer, stack, x3, x2, y1, y1, z2, z3, red, green, blue);
+        drawLine(consumer, stack, x2, x1, y1, y1, z3, z2, red, green, blue);
     }
     
     private void cmdShow(ClientPlayerEntity sender) {
