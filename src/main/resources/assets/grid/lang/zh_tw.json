@@ -1,10 +1,10 @@
 {
     "key.categories.grid": "Grid",
-    "key.grid.showhide": "Show/Hide Grid",
+    "key.grid.showhide": "顯示/隱藏 網格",
     "key.grid.here": "Align Grid around player",
     "key.grid.fixy": "Fix Grid height to player",
     "key.grid.spawns": "Show/Hide spawn blocks",
-    "key.grid.settings": "Change ingame settings",
+    "key.grid.settings": "變更遊戲設定",
     "msg.gridshown": "Grid shown.",
     "msg.gridhidden": "Grid hidden.",
     "msg.gridlines": "Grid showing lines.",

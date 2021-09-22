@@ -37,7 +37,7 @@
     "grid.config.colorbiome": "バイオームマーカーの色",
     "grid.config.tt.colorbiome": "バイオームマーカーの色",
     "grid.config.usecache": "バイオーム/スポーンキャッシュの使用",
-    "grid.config.tt.usecache": "これをfalseに設定すると、フレームレートを犠牲にしても、変化をすぐに確認することができます。",
+    "grid.config.tt.usecache": "これをfalseに設定すると、フレームレートを犠牲にしてでも、変化をすぐに確認することができます。",
     "grid.settings.x": "X 間隔",
     "grid.settings.z": "Z 間隔",
     "grid.settings.y": "Yレベル (-1～浮動小数点)",

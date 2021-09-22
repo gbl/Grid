@@ -4,7 +4,7 @@
     "key.grid.here": "Aligner la grille autour du joueur",
     "key.grid.fixy": "Aligner la hauteur de la grille au joueur",
     "key.grid.spawns": "Afficher/Masquer les blocs d'apparition",
-    "key.grid.settings": "Change ingame settings",
+    "key.grid.settings": "Changer les paramètres en jeux",
     "msg.gridshown": "Grille affichée.",
     "msg.gridhidden": "Grille cachée.",
     "msg.gridlines": "Grille affichant les lignes.",

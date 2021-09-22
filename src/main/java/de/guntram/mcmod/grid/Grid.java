@@ -631,7 +631,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
                 }
             }
         };
-        MinecraftClient.getInstance().openScreen(screen);
+        MinecraftClient.getInstance().setScreen(screen);
     }
 
     public void registerCommands() {
