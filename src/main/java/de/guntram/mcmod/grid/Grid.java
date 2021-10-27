@@ -485,21 +485,22 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     }
     
     private void cmdSpawns(ClientPlayerEntity sender, String newLevel) {
-        int level=8;
-        try {
-            level=Integer.parseInt(newLevel);
-        } catch (NumberFormatException | NullPointerException ex) {
-            ;
+        if (newLevel != null) {
+            int level=8;
+            try {
+                level=Integer.parseInt(newLevel);
+            } catch (NumberFormatException | NullPointerException ex) {
+                ;
+            }
+            if (level<=0 || level>15)
+                level=8;
+            this.lightLevel=level;
         }
-        if (level<=0 || level>15)
-            level=8;
-        this.lightLevel=level;
         if (showSpawns && newLevel==null) {
-
             sender.sendMessage(new LiteralText(I18n.translate("msg.spawnshidden")), false);
             showSpawns=false;
         } else {
-            sender.sendMessage(new LiteralText(I18n.translate("msg.spawnsshown", level)), false);
+            sender.sendMessage(new LiteralText(I18n.translate("msg.spawnsshown", this.lightLevel)), false);
             showSpawns=true;
         }
     }
