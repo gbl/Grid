@@ -435,8 +435,8 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         if (dump) {
             System.out.println("line from "+x1+","+y1+","+z1+" to "+x2+","+y2+","+z2);
         }
-        Matrix4f model = stack.peek().getModel();
-        Matrix3f normal = stack.peek().getNormal();
+        Matrix4f model = stack.peek().getPositionMatrix();
+        Matrix3f normal = stack.peek().getNormalMatrix();
         
         float dx = x2 - x1;
         float dy = y2 - y1;
