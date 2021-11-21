@@ -21,8 +21,7 @@
         "fabric": "*"
     },
     "recommends": {
-        "modmenu" : "*",
-        "modupdater": ">=1.1.7"        
+        "modmenu" : "*"
     },
     "name": "Grid",
     "description": "Markers to help with counting blocks, building circles, and showing possible mob spawn locations",
