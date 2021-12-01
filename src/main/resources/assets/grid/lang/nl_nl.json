@@ -40,7 +40,7 @@
     "grid.config.tt.usecache": "Stel dit in op false om wijzigingen onmiddelijk te zien, ten koste van fps.",
     "grid.settings.x": "X afstand",
     "grid.settings.z": "Z afstand",
-    "grid.settings.y": "Y hoogte (-1 voor veranderlijk)",
+    "grid.settings.y": "Y hoogte (-64 voor veranderlijk)",
     "grid.settings.distance": "Afstand om overlay te tonen",
     "grid.settings.lightlevel": "Lichtniveau om spawns weer te geven",
     "grid.settings.isblocks": "Toon blokken?",

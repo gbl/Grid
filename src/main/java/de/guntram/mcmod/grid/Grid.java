@@ -57,13 +57,15 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     static final String VERSION="@VERSION@";
     public static Grid instance;
     
+    public static final int Y_FOR_FLOAT=-64;
+    
     private int gridX=16;
     private int gridZ=16;
-    private int fixY=-1;
+    private int fixY=Y_FOR_FLOAT;
     private int offsetX=0;
     private int offsetZ=0;
     private int distance=30;
-    private int lightLevel=8;
+    private int lightLevel=1;
     private boolean showGrid=false;
     private boolean isBlocks=true;
     private boolean isCircles=false;
@@ -88,9 +90,19 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     private boolean dump;
     private long lastDumpTime, thisDumpTime;
     
-    private int[][] biomeCache;
-    private int[][] spawnCache;
+    private Displaycache[][] biomeCache;
+    private Displaycache[][] spawnCache;
     int biomeUpdateX, spawnUpdateX;
+    
+    class Displaycache {
+        byte displaymode;
+        int ycoord;
+        
+        Displaycache(byte mode, int y) {
+            this.displaymode = mode;
+            this.ycoord = y;
+        }
+    }
 
     @Override
     public void onInitializeClient() {
@@ -100,11 +112,11 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         ConfigurationProvider.register(MODNAME, confHandler);
         confHandler.load(ConfigurationProvider.getSuggestedFile(MODID));
 
-        biomeCache = new int[256][];
-        spawnCache = new int[256][];
+        biomeCache = new Displaycache[256][];
+        spawnCache = new Displaycache[256][];
         for (int i=0; i<256; i++) {
-            spawnCache[i]=new int[256];
-            biomeCache[i]=new int[256];
+            spawnCache[i]=new Displaycache[256];
+            biomeCache[i]=new Displaycache[256];
         }
 
         setKeyBindings();
@@ -156,7 +168,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         }
         
         if (showGrid) {
-            float tempy=((float)(fixY==-1 ? player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks : fixY));
+            float tempy=((float)(fixY==Y_FOR_FLOAT ? player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks : fixY));
             final float y;
             if (player.getY()+player.getEyeHeight(player.getPose()) > tempy) {
                 y=tempy+0.05f;
@@ -293,7 +305,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
                 
-                int display = 0;
+                Displaycache display = null;
                 if (alwaysUpdate || x == spawnUpdateX) {
                     if (cachedChunk == null || cachedChunk.getPos().x != (x>>4) || cachedChunk.getPos().z != (z>>4)) {
                         cachedChunk=player.world.getChunk(x>>4, z>>4);
@@ -313,11 +325,11 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
                                 BlockPos up = pos.up();
                                 // if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, up, EntityType.CREEPER)) {
                                     if (player.world.getLightLevel(LightType.BLOCK, up)>=lightLevel)
-                                        display = 0x0000 | y;
+                                        display = new Displaycache((byte)0, y);
                                     else if (player.world.getLightLevel(LightType.SKY, up)>=lightLevel)
-                                        display = 0x1000 | y;
+                                        display = new Displaycache((byte)1, y);
                                     else
-                                        display = 0x2000 | y;
+                                        display = new Displaycache((byte)2, y);
                                 // }
                             }
                             if (foundAir) {
@@ -331,11 +343,14 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
                 } else {
                     display = spawnCache[x&0xff][z&0xff];
                 }
+                if (display == null) {
+                    continue;
+                }
 
-                if ((display & 0xf000) == 0x1000) {
-                    drawCross(consumer, stack, x, (display&0xfff)+1.05f, z, spawnNightColor[0], spawnNightColor[1], spawnNightColor[2], false );
-                } else if ((display & 0xf000) == 0x2000) {
-                    drawCross(consumer, stack, x, (display&0xfff)+1.05f, z, spawnDayColor[0], spawnDayColor[1], spawnDayColor[2], true );
+                if (display.displaymode == 1) {
+                    drawCross(consumer, stack, x, display.ycoord+1.05f, z, spawnNightColor[0], spawnNightColor[1], spawnNightColor[2], false );
+                } else if (display.displaymode == 2) {
+                    drawCross(consumer, stack, x, display.ycoord+1.05f, z, spawnDayColor[0], spawnDayColor[1], spawnDayColor[2], true );
                 }
             }
         }
@@ -344,8 +359,8 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     private void showBiomes(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
         int miny=(int)(player.getY())-16;
         int maxy=(int)(player.getY());
-        if (miny<0) { miny=0; }
-        if (maxy>255) { maxy=255; }
+        if (miny<player.world.getBottomY()) { miny=player.world.getBottomY(); }
+        if (maxy>player.world.getTopY()-1) { maxy=player.world.getTopY()-1; }
         Registry<Biome> registry = player.world.getRegistryManager().get(Registry.BIOME_KEY);
 
         biomeUpdateX++;
@@ -356,7 +371,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         
         for (int x=baseX-distance; x<=baseX+distance; x++) {
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
-                int display = 0;
+                Displaycache display = null;
                 if (alwaysUpdate || x == biomeUpdateX) {
                     boolean match = showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z))).getPath()).find();
                     if (match) {
@@ -364,18 +379,18 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
                         while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
                             y--;
                         }
-                        display = 0x1000 + y;
+                        display = new Displaycache((byte)1, y);
                     } else {
-                        display = 0;
+                        display = null;
                     }
                     biomeCache[x&0xff][z&0xff] = display;
                 } else {
                     display = biomeCache[x&0xff][z&0xff];
                 }
-                if ((display & 0x1000) != 0) {
+                if (display != null && display.displaymode != 0) {
                     int y;
-                    if (fixY == -1) {
-                        y=display & 0xfff;
+                    if (fixY == Y_FOR_FLOAT) {
+                        y=display.ycoord;
                     } else {
                         y=fixY-1;
                     }
@@ -486,14 +501,14 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     
     private void cmdSpawns(ClientPlayerEntity sender, String newLevel) {
         if (newLevel != null) {
-            int level=8;
+            int level=1;
             try {
                 level=Integer.parseInt(newLevel);
             } catch (NumberFormatException | NullPointerException ex) {
                 ;
             }
             if (level<=0 || level>15)
-                level=8;
+                level=1;
             this.lightLevel=level;
         }
         if (showSpawns && newLevel==null) {
@@ -549,10 +564,10 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     }
     
     private void cmdFixy(ClientPlayerEntity sender) {
-        if (fixY==-1) {
+        if (fixY==Y_FOR_FLOAT) {
             cmdFixy(sender, (int)Math.floor(sender.getY()));
         } else {
-            fixY=-1;
+            fixY=Y_FOR_FLOAT;
             sender.sendMessage(new LiteralText(I18n.translate("msg.gridheightfloat")), false);
         }
     }
@@ -612,9 +627,9 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         runtimeSettings = new VolatileConfiguration();
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.x", "", gridX, gridX, 1, 64, (val) -> gridX=(int) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.z", "", gridZ, gridZ, 1, 64, (val) -> gridZ=(int) val));
-        runtimeSettings.addItem(new ConfigurationItem("grid.settings.y", "", fixY, fixY, -2, 255, (val) -> fixY =(int) val));           // Min is actually -1 but due to how rounding negatives work we need -2 to have -1 shown.
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.y", "", fixY, fixY, Y_FOR_FLOAT-1, 383, (val) -> fixY =(int) val));           // Min is actually -1 but due to how rounding negatives work we need -2 to have -1 shown.
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.distance", "", distance, 30, 16, 255, (val) -> distance=(int) val));
-        runtimeSettings.addItem(new ConfigurationItem("grid.settings.lightlevel", "", lightLevel, 8, 1, 15, (val) -> lightLevel=(int) val));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.lightlevel", "", lightLevel, 1, 1, 15, (val) -> lightLevel=(int) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.showgrid", "", showGrid, false, null, null, (val) -> showGrid=(boolean) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.isblocks", "", isBlocks, true, null, null, (val) -> isBlocks=(boolean) val));
         runtimeSettings.addItem(new ConfigurationSelectList("grid.settings.displaymode", "", modes, 0 + (isCircles ? 1 : 0) + (isHexes ? 2 : 0), 0, (val) -> {

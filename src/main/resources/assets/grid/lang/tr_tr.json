@@ -40,7 +40,7 @@
     "grid.config.tt.usecache": "Kare sayısında azalma yaşadığınız müddet derhal bu ayarı false/Hayır olarak ayarlayın.",
     "grid.settings.x": "X menzili",
     "grid.settings.z": "Z menzili",
-    "grid.settings.y": "Y seviyesi (float için -1)",
+    "grid.settings.y": "Y seviyesi (float için -64)",
     "grid.settings.distance": "Arayüzü göstermek için menzil",
     "grid.settings.lightlevel": "Doğum yerlerini görmek için ışık derecesi",
     "grid.settings.isblocks": "Blokları göster?",

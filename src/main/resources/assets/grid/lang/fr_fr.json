@@ -40,7 +40,7 @@
     "grid.config.tt.usecache": "Mettez sur \"false\" pour voir les changements immédiatement, au détriment des Images Par Secondes (IPS).",
     "grid.settings.x": "Distance X",
     "grid.settings.z": "Distance Z",
-    "grid.settings.y": "Niveau Y (-1 pour flotter)",
+    "grid.settings.y": "Niveau Y (-64 pour flotter)",
     "grid.settings.distance": "Distance à laquelle afficher la superposition",
     "grid.settings.lightlevel": "Niveau de lumière pour afficher les spawn",
     "grid.settings.isblocks": "Afficher les blocs ?",

@@ -40,7 +40,7 @@
     "grid.config.tt.usecache": "Установите значение false, чтобы увидеть изменения немедленно, за счёт частоты кадров.",
     "grid.settings.x": "Дистанция X",
     "grid.settings.z": "Дистанция Z",
-    "grid.settings.y": "Уровень Y (с -1 до float)",
+    "grid.settings.y": "Уровень Y (с -64 до float)",
     "grid.settings.distance": "Дистанция для показа оверлея",
     "grid.settings.lightlevel": "Уровень света, для показа спавна",
     "grid.settings.isblocks": "Показывать блоки?",

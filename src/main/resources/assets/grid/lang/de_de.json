@@ -40,7 +40,7 @@
     "grid.config.tt.usecache": "Wenn dies ausgeschaltet wird, werden Änderungen sofort angezeigt, auf Kosten der Framerate.",
     "grid.settings.x": "X-Distanz",
     "grid.settings.z": "Z-Distanz",
-    "grid.settings.y": "Y-Level (-1 für Automatismus)",
+    "grid.settings.y": "Y-Level (-64 für Automatik)",
     "grid.settings.distance": "Entfernung, bis zu der der Overlay angezeigt wird",
     "grid.settings.lightlevel": "Lightlevel um Spawns anzuzeigen",
     "grid.settings.isblocks": "Blöcke anzeigen?",

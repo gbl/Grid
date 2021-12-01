@@ -40,7 +40,7 @@
     "grid.config.tt.usecache": "Set this to false to see changes immediately, at the expense of frame rate.",
     "grid.settings.x": "X distance",
     "grid.settings.z": "Z distance",
-    "grid.settings.y": "Y level (-1 to float)",
+    "grid.settings.y": "Y level (-64 to float)",
     "grid.settings.distance": "Distance to show overlay",
     "grid.settings.lightlevel": "Lightlevel to show spawns",
     "grid.settings.isblocks": "Show blocks?",

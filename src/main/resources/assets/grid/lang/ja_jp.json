@@ -40,7 +40,7 @@
     "grid.config.tt.usecache": "これをfalseに設定すると、フレームレートを犠牲にしてでも、変化をすぐに確認することができます。",
     "grid.settings.x": "X 間隔",
     "grid.settings.z": "Z 間隔",
-    "grid.settings.y": "Yレベル (-1～浮動小数点)",
+    "grid.settings.y": "Yレベル (-64～浮動小数点)",
     "grid.settings.distance": "グリッドの表示距離",
     "grid.settings.lightlevel": "MOBスポーンブロックの明るさレベル",
     "grid.settings.isblocks": "ブロック型グリッドの表示",

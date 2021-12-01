@@ -40,7 +40,7 @@
     "grid.config.tt.usecache": "Ustaw to na fałsz, by zobaczyć zmiany natychmiastowo, kosztem klatek na sekundę.",
     "grid.settings.x": "Odległość X",
     "grid.settings.z": "Odległość Z",
-    "grid.settings.y": "Poziom Y (-1 do unoszenia)",
+    "grid.settings.y": "Poziom Y (-64 do unoszenia)",
     "grid.settings.distance": "Odległość do wyświetlenia nakładki",
     "grid.settings.lightlevel": "Poziom światła, aby pokazać spawny",
     "grid.settings.isblocks": "Pokazać bloki?",
