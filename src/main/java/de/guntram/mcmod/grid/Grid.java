@@ -373,7 +373,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
                 Displaycache display = null;
                 if (alwaysUpdate || x == biomeUpdateX) {
-                    boolean match = showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z))).getPath()).find();
+                    boolean match = showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z)).value()).getPath()).find();
                     if (match) {
                         int y=(int)(player.getY());
                         while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
