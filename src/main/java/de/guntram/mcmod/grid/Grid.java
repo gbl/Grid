@@ -17,9 +17,9 @@ import de.guntram.mcmod.fabrictools.VolatileConfiguration;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v1.ClientCommandManager;
-import static net.fabricmc.fabric.api.client.command.v1.ClientCommandManager.argument;
-import static net.fabricmc.fabric.api.client.command.v1.ClientCommandManager.literal;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.block.Block;
@@ -33,7 +33,7 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix3f;
@@ -491,12 +491,12 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     
     private void cmdShow(ClientPlayerEntity sender) {
         showGrid = true;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridshown", (Object[]) null)), false);
+        sender.sendMessage(Text.literal(I18n.translate("msg.gridshown", (Object[]) null)), false);
     }
     
     private void cmdHide(ClientPlayerEntity sender) {
         showGrid = false;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridhidden", (Object[]) null)), false);
+        sender.sendMessage(Text.literal(I18n.translate("msg.gridhidden", (Object[]) null)), false);
     }
     
     private void cmdSpawns(ClientPlayerEntity sender, String newLevel) {
@@ -512,33 +512,33 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
             this.lightLevel=level;
         }
         if (showSpawns && newLevel==null) {
-            sender.sendMessage(new LiteralText(I18n.translate("msg.spawnshidden")), false);
+            sender.sendMessage(Text.literal(I18n.translate("msg.spawnshidden")), false);
             showSpawns=false;
         } else {
-            sender.sendMessage(new LiteralText(I18n.translate("msg.spawnsshown", this.lightLevel)), false);
+            sender.sendMessage(Text.literal(I18n.translate("msg.spawnsshown", this.lightLevel)), false);
             showSpawns=true;
         }
     }
     
     private void cmdLines(ClientPlayerEntity sender) {
         showGrid = true; isBlocks = false;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridlines", (Object[]) null)), false);
+        sender.sendMessage(Text.literal(I18n.translate("msg.gridlines", (Object[]) null)), false);
     }
     
     private void cmdBlocks(ClientPlayerEntity sender) {
         showGrid = true; isBlocks = true;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridblocks", (Object[]) null)), false);
+        sender.sendMessage(Text.literal(I18n.translate("msg.gridblocks", (Object[]) null)), false);
     }
     
     private void cmdCircles(ClientPlayerEntity sender) {
         if (isCircles) {
             isCircles = false;
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridnomorecircles", (Object[]) null)), false);
+            sender.sendMessage(Text.literal(I18n.translate("msg.gridnomorecircles", (Object[]) null)), false);
         } else {
             isCircles = true;
             isHexes = false;
             showGrid = true;
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridcircles", (Object[]) null)), false);
+            sender.sendMessage(Text.literal(I18n.translate("msg.gridcircles", (Object[]) null)), false);
         }
     }
     
@@ -550,7 +550,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         offsetX=playerXShift;
         offsetZ=playerZShift;
         showGrid=true;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridaligned", (Object[]) null)), false);
+        sender.sendMessage(Text.literal(I18n.translate("msg.gridaligned", (Object[]) null)), false);
     }
     
     private void cmdHex(ClientPlayerEntity sender) {
@@ -568,25 +568,25 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
             cmdFixy(sender, (int)Math.floor(sender.getY()));
         } else {
             fixY=Y_FOR_FLOAT;
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridheightfloat")), false);
+            sender.sendMessage(Text.literal(I18n.translate("msg.gridheightfloat")), false);
         }
     }
 
     private void cmdFixy(ClientPlayerEntity sender, int level) {
             fixY=level;
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridheightfixed", fixY)), false);
+            sender.sendMessage(Text.literal(I18n.translate("msg.gridheightfixed", fixY)), false);
     }
     
     private void cmdChunks(ClientPlayerEntity sender) {
         offsetX=offsetZ=0;
         gridX=gridZ=16;
         showGrid=true;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.gridchunks")), false);
+        sender.sendMessage(Text.literal(I18n.translate("msg.gridchunks")), false);
     }
     
     private void cmdDistance(ClientPlayerEntity sender, int distance) {
         this.distance=distance;
-        sender.sendMessage(new LiteralText(I18n.translate("msg.griddistance", distance)), false);
+        sender.sendMessage(Text.literal(I18n.translate("msg.griddistance", distance)), false);
     }
     
     private void cmdX(ClientPlayerEntity sender, int coord) {
@@ -602,9 +602,9 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
             gridX=newX;
             gridZ=newZ;
             showGrid=true;
-        	sender.sendMessage(new LiteralText(I18n.translate("msg.gridpattern", gridX, gridZ)), false);
+        	sender.sendMessage(Text.literal(I18n.translate("msg.gridpattern", gridX, gridZ)), false);
         } else {
-            sender.sendMessage(new LiteralText(I18n.translate("msg.gridcoordspositive")), false);
+            sender.sendMessage(Text.literal(I18n.translate("msg.gridcoordspositive")), false);
         }
     }
     
@@ -614,10 +614,10 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         } else {
             try {
                 this.showBiomes=Pattern.compile(biome, Pattern.CASE_INSENSITIVE);
-                sender.sendMessage(new LiteralText(I18n.translate("msg.biomesearching", biome)), false);
+                sender.sendMessage(Text.literal(I18n.translate("msg.biomesearching", biome)), false);
             } catch (PatternSyntaxException ex) {
                 showBiomes = null;
-                sender.sendMessage(new LiteralText(I18n.translate("msg.biomepatternbad", biome)), false);
+                sender.sendMessage(Text.literal(I18n.translate("msg.biomepatternbad", biome)), false);
             }
         }
     }
