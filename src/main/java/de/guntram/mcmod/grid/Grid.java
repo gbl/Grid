@@ -20,6 +20,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.block.Block;
@@ -651,117 +652,119 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     }
 
     public void registerCommands() {
-        ClientCommandManager.DISPATCHER.register(
-            literal("grid")
-                .then(
-                    literal("show").executes(c->{
-                        instance.cmdShow(MinecraftClient.getInstance().player);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("hide").executes(c->{
-                        instance.cmdHide(MinecraftClient.getInstance().player);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("lines").executes(c->{
-                        instance.cmdLines(MinecraftClient.getInstance().player);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("blocks").executes(c->{
-                        instance.cmdBlocks(MinecraftClient.getInstance().player);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("circles").executes(c->{
-                        instance.cmdCircles(MinecraftClient.getInstance().player);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("here").executes(c->{
-                        instance.cmdHere(MinecraftClient.getInstance().player);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("hex").executes(c->{
-                        instance.cmdHex(MinecraftClient.getInstance().player);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("fixy").then(
-                        argument("y", integer()).executes(c->{
-                            instance.cmdFixy(MinecraftClient.getInstance().player, getInteger(c, "y"));
-                            return 1;
-                        })
-                    ).executes(c->{
-                        instance.cmdFixy(MinecraftClient.getInstance().player);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("chunks").executes(c->{
-                        instance.cmdChunks(MinecraftClient.getInstance().player);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("spawns").then(
-					    argument("lightlevel", integer()).executes(c->{
-							instance.cmdSpawns(MinecraftClient.getInstance().player, ""+getInteger(c, "lightlevel"));
-                            return 1;
-						})
-					).executes(c->{
-                        instance.cmdSpawns(MinecraftClient.getInstance().player, null);
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("distance").then (
-                        argument("distance", integer()).executes(c->{
-                            instance.cmdDistance(MinecraftClient.getInstance().player, getInteger(c, "distance"));
+         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            dispatcher.register(
+                literal("grid")
+                    .then(
+                        literal("show").executes(c->{
+                            instance.cmdShow(MinecraftClient.getInstance().player);
                             return 1;
                         })
                     )
-                )
-                .then(
-                    argument("x", integer()).then (
-                        argument("z", integer()).executes(c->{
-                            instance.cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "z"));
+                    .then(
+                        literal("hide").executes(c->{
+                            instance.cmdHide(MinecraftClient.getInstance().player);
                             return 1;
                         })
-                    ).executes(c->{
-                        instance.cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "x"));
-                        return 1;
-                    })
-                )
-                .then(
-                    literal("biome").then(
-					    argument("pattern", string()).executes(c->{
-							instance.cmdBiome(MinecraftClient.getInstance().player, ""+getString(c, "pattern"));
+                    )
+                    .then(
+                        literal("lines").executes(c->{
+                            instance.cmdLines(MinecraftClient.getInstance().player);
                             return 1;
-						})
-					).executes(c->{
-                        instance.cmdBiome(MinecraftClient.getInstance().player, null);
-                        return 1;
-                    })
-                )
-                .then (
-                    literal("settings").executes(c->{
-                        // This can't open the settings screen directly because
-                        // MC will call closeScreen to close the chat hud.
-                        instance.settingsRequested = true;
-                        return 1;
-                    })
-                )
-        );
+                        })
+                    )
+                    .then(
+                        literal("blocks").executes(c->{
+                            instance.cmdBlocks(MinecraftClient.getInstance().player);
+                            return 1;
+                        })
+                    )
+                    .then(
+                        literal("circles").executes(c->{
+                            instance.cmdCircles(MinecraftClient.getInstance().player);
+                            return 1;
+                        })
+                    )
+                    .then(
+                        literal("here").executes(c->{
+                            instance.cmdHere(MinecraftClient.getInstance().player);
+                            return 1;
+                        })
+                    )
+                    .then(
+                        literal("hex").executes(c->{
+                            instance.cmdHex(MinecraftClient.getInstance().player);
+                            return 1;
+                        })
+                    )
+                    .then(
+                        literal("fixy").then(
+                            argument("y", integer()).executes(c->{
+                                instance.cmdFixy(MinecraftClient.getInstance().player, getInteger(c, "y"));
+                                return 1;
+                            })
+                        ).executes(c->{
+                            instance.cmdFixy(MinecraftClient.getInstance().player);
+                            return 1;
+                        })
+                    )
+                    .then(
+                        literal("chunks").executes(c->{
+                            instance.cmdChunks(MinecraftClient.getInstance().player);
+                            return 1;
+                        })
+                    )
+                    .then(
+                        literal("spawns").then(
+                                                argument("lightlevel", integer()).executes(c->{
+                                                            instance.cmdSpawns(MinecraftClient.getInstance().player, ""+getInteger(c, "lightlevel"));
+                                return 1;
+                                                    })
+                                            ).executes(c->{
+                            instance.cmdSpawns(MinecraftClient.getInstance().player, null);
+                            return 1;
+                        })
+                    )
+                    .then(
+                        literal("distance").then (
+                            argument("distance", integer()).executes(c->{
+                                instance.cmdDistance(MinecraftClient.getInstance().player, getInteger(c, "distance"));
+                                return 1;
+                            })
+                        )
+                    )
+                    .then(
+                        argument("x", integer()).then (
+                            argument("z", integer()).executes(c->{
+                                instance.cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "z"));
+                                return 1;
+                            })
+                        ).executes(c->{
+                            instance.cmdXZ(MinecraftClient.getInstance().player, getInteger(c, "x"), getInteger(c, "x"));
+                            return 1;
+                        })
+                    )
+                    .then(
+                        literal("biome").then(
+                                                argument("pattern", string()).executes(c->{
+                                                            instance.cmdBiome(MinecraftClient.getInstance().player, ""+getString(c, "pattern"));
+                                return 1;
+                                                    })
+                                            ).executes(c->{
+                            instance.cmdBiome(MinecraftClient.getInstance().player, null);
+                            return 1;
+                        })
+                    )
+                    .then (
+                        literal("settings").executes(c->{
+                            // This can't open the settings screen directly because
+                            // MC will call closeScreen to close the chat hud.
+                            instance.settingsRequested = true;
+                            return 1;
+                        })
+                    )
+            );
+        });
     }
 
     public void setKeyBindings() {
