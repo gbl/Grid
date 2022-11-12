@@ -37,14 +37,16 @@ import net.minecraft.entity.Entity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Matrix3f;
-import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.registry.Registries;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.LightType;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_B;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_C;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_G;
@@ -362,7 +364,8 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         int maxy=(int)(player.getY());
         if (miny<player.world.getBottomY()) { miny=player.world.getBottomY(); }
         if (maxy>player.world.getTopY()-1) { maxy=player.world.getTopY()-1; }
-        Registry<Biome> registry = player.world.getRegistryManager().get(Registry.BIOME_KEY);
+        
+        // Registry<Biome> registry = player.world.getRegistryManager().get(Registry.BIOME_KEY);
 
         biomeUpdateX++;
         if (biomeUpdateX < (baseX-distance) || biomeUpdateX > baseX+distance) {
@@ -374,7 +377,8 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
                 Displaycache display = null;
                 if (alwaysUpdate || x == biomeUpdateX) {
-                    boolean match = showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z)).value()).getPath()).find();
+                    // boolean match = showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z)).value()).getPath()).find();
+                    boolean match = showBiomes.matcher(player.world.getBiome(new BlockPos(x, 64, z)).toString()).find();
                     if (match) {
                         int y=(int)(player.getY());
                         while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
