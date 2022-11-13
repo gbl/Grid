@@ -17,7 +17,6 @@ import de.guntram.mcmod.fabrictools.VolatileConfiguration;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -37,11 +36,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.registry.Registries;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.LightType;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -365,8 +362,6 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         if (miny<player.world.getBottomY()) { miny=player.world.getBottomY(); }
         if (maxy>player.world.getTopY()-1) { maxy=player.world.getTopY()-1; }
         
-        // Registry<Biome> registry = player.world.getRegistryManager().get(Registry.BIOME_KEY);
-
         biomeUpdateX++;
         if (biomeUpdateX < (baseX-distance) || biomeUpdateX > baseX+distance) {
             biomeUpdateX = baseX-distance;
@@ -377,8 +372,10 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
             for (int z=baseZ-distance; z<=baseZ+distance; z++) {
                 Displaycache display = null;
                 if (alwaysUpdate || x == biomeUpdateX) {
-                    // boolean match = showBiomes.matcher(registry.getId(player.world.getBiome(new BlockPos(x, 64, z)).value()).getPath()).find();
-                    boolean match = showBiomes.matcher(player.world.getBiome(new BlockPos(x, 64, z)).toString()).find();
+                    // 2 lines stolen from DebugHud.java
+                    RegistryEntry<Biome> biome = player.world.getBiome(new BlockPos(x, 64, z));
+                    String biomeName = biome.getKeyOrValue().map(key -> key.getValue().toString(), value -> "[unregistered "+value+"]");
+                    boolean match = showBiomes.matcher(biomeName).find();
                     if (match) {
                         int y=(int)(player.getY());
                         while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
