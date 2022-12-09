@@ -35,7 +35,7 @@
     "grid.config.colorspawnday": "Altijd spawnend kleur",
     "grid.config.tt.colorspawnday": "De kleur waarin altijd spawnend getoond zal worden",
     "grid.config.colorbiome": "Biome aanduiding kleur",
-    "grid.config.tt.colorbiome": "De kleur waarin biome aanduidingen zullen getoond worden",
+    "grid.config.tt.colorbiome": "De kleur waarin biomeaanduidingen zullen getoond worden",
     "grid.config.usecache": "Gebruik biome / spawn cache",
     "grid.config.tt.usecache": "Stel dit in op false om wijzigingen onmiddelijk te zien, ten koste van fps.",
     "grid.settings.x": "X afstand",
