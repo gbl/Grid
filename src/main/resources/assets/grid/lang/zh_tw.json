@@ -36,7 +36,7 @@
     "grid.config.tt.colorspawnday": "The color that everytime spawns will be shown in",
     "grid.config.colorbiome": "Biome marker color",
     "grid.config.tt.colorbiome": "The color that biome markers will be shown in",
-    "grid.config.usecache": "Use biome / spawn cache",
+    "grid.config.usecache": "使用生態域 / 生怪快取",
     "grid.config.tt.usecache": "Set this to false to see changes immediately, at the expense of frame rate.",
     "grid.settings.x": "X 軸距離",
     "grid.settings.z": "Z 軸距離",
