@@ -26,6 +26,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.VertexConsumer;
@@ -38,6 +39,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.LightType;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
@@ -289,10 +291,10 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     private void showSpawns(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
         int miny=(int)(player.getY())-64;
         int maxy=(int)(player.getY())+2;
-        
-        player.world.countVerticalSections();
-        if (miny<player.world.getBottomY()) { miny=player.world.getBottomY(); }
-        if (maxy>player.world.getTopY()-1) { maxy=player.world.getTopY()-1; }
+
+        World playerWorld = player.getWorld();
+        if (miny<playerWorld.getBottomY()) { miny=playerWorld.getBottomY(); }
+        if (maxy>playerWorld.getTopY()-1)  { maxy=playerWorld.getTopY()-1; }
 
         WorldChunk cachedChunk = null;
 
@@ -308,7 +310,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
                 Displaycache display = null;
                 if (alwaysUpdate || x == spawnUpdateX) {
                     if (cachedChunk == null || cachedChunk.getPos().x != (x>>4) || cachedChunk.getPos().z != (z>>4)) {
-                        cachedChunk=player.world.getChunk(x>>4, z>>4);
+                        cachedChunk=playerWorld.getChunk(x>>4, z>>4);
                     }
                     boolean foundAir = false;
                     for (int y=maxy; y>=miny; y--) {
@@ -320,13 +322,13 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
                             System.out.printf("At 322/38 y=%d, foundAir=%s, state=%s, isSolid=%s\n",
                                     y, ((Boolean)foundAir).toString(), state.getBlock().getName().getString(), state.isSolidBlock(player.world, pos));
                         } */
-                        if (state.isSolidBlock(player.world, pos)) {
+                        if (state.isSolidBlock(playerWorld, pos)) {
                             if (foundAir && y != maxy) {
                                 BlockPos up = pos.up();
                                 // if (SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, player.world, up, EntityType.CREEPER)) {
-                                    if (player.world.getLightLevel(LightType.BLOCK, up)>=lightLevel)
+                                    if (playerWorld.getLightLevel(LightType.BLOCK, up)>=lightLevel)
                                         display = new Displaycache((byte)0, y);
-                                    else if (player.world.getLightLevel(LightType.SKY, up)>=lightLevel)
+                                    else if (playerWorld.getLightLevel(LightType.SKY, up)>=lightLevel)
                                         display = new Displaycache((byte)1, y);
                                     else
                                         display = new Displaycache((byte)2, y);
@@ -359,9 +361,10 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     private void showBiomes(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
         int miny=(int)(player.getY())-16;
         int maxy=(int)(player.getY());
-        if (miny<player.world.getBottomY()) { miny=player.world.getBottomY(); }
-        if (maxy>player.world.getTopY()-1) { maxy=player.world.getTopY()-1; }
-        
+        World playerWorld = player.getWorld();
+        if (miny<playerWorld.getBottomY()) { miny=playerWorld.getBottomY(); }
+        if (maxy>playerWorld.getTopY()-1)  { maxy=playerWorld.getTopY()-1; }
+
         biomeUpdateX++;
         if (biomeUpdateX < (baseX-distance) || biomeUpdateX > baseX+distance) {
             biomeUpdateX = baseX-distance;
@@ -373,12 +376,12 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
                 Displaycache display = null;
                 if (alwaysUpdate || x == biomeUpdateX) {
                     // 2 lines stolen from DebugHud.java
-                    RegistryEntry<Biome> biome = player.world.getBiome(new BlockPos(x, 64, z));
+                    RegistryEntry<Biome> biome = playerWorld.getBiome(new BlockPos(x, 64, z));
                     String biomeName = biome.getKeyOrValue().map(key -> key.getValue().toString(), value -> "[unregistered "+value+"]");
                     boolean match = showBiomes.matcher(biomeName).find();
                     if (match) {
                         int y=(int)(player.getY());
-                        while (y>=miny && isAir(player.world.getBlockState(new BlockPos(x, y, z)).getBlock())) {
+                        while (y>=miny && isAir(playerWorld.getBlockState(new BlockPos(x, y, z)).getBlock())) {
                             y--;
                         }
                         display = new Displaycache((byte)1, y);
@@ -640,15 +643,8 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.showspawn", "", showSpawns, false, null, null, (val) -> showSpawns = (boolean) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.showbiomes", "", (showBiomes != null ? showBiomes.pattern() : ""), "", null, null,
                 (val) -> instance.cmdBiome(MinecraftClient.getInstance().player, (String) val)));
-        
-        GuiModOptions screen = new GuiModOptions(null, "Grid Settings", this) {
-            @Override
-            public void renderBackground(MatrixStack matrices, int vOffset) {
-                if (this.client.world == null) {
-                    super.renderBackground(matrices, vOffset);
-                }
-            }
-        };
+
+        Screen screen = GuiModOptions.getGuiModOptions(null, "Grid Settings", this);
         MinecraftClient.getInstance().setScreen(screen);
     }
 

@@ -9,7 +9,7 @@ public class MMConfigurationHandler implements ModMenuApi
 {
     @Override
     public ConfigScreenFactory getModConfigScreenFactory() {
-        return screen -> new GuiModOptions(screen, Grid.MODNAME, ConfigurationProvider.getHandler(Grid.MODNAME));
+        return screen -> GuiModOptions.getGuiModOptions(screen, Grid.MODNAME, ConfigurationProvider.getHandler(Grid.MODNAME));
     }
 
 }

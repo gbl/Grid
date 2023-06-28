@@ -58,12 +58,12 @@ public class ConfigurationHandler implements ModConfigurationHandler {
         config.forget("grid.config.biomecolor");
         config.forget("grid.config.cacheupdateseconds");
         
-        blockColor =        config.getInt("grid.config.colorblock",     Configuration.CATEGORY_CLIENT, 0x8080ff, 0, 0xffffff, "grid.config.tt.colorblock");
-        lineColor =         config.getInt("grid.config.colorline",      Configuration.CATEGORY_CLIENT, 0xff8000, 0, 0xffffff, "grid.config.tt.colorline");
-        circleColor =       config.getInt("grid.config.colorcircle",    Configuration.CATEGORY_CLIENT, 0x00e480, 0, 0xffffff, "grid.config.tt.colorcircle");
-        spawnNightColor =   config.getInt("grid.config.colorspawnnight",Configuration.CATEGORY_CLIENT, 0xffff00, 0, 0xffffff, "grid.config.tt.colorspawnnight");
-        spawnDayColor =     config.getInt("grid.config.colorspawnday",  Configuration.CATEGORY_CLIENT, 0xff0000, 0, 0xffffff, "grid.config.tt.colorspawnday");
-        biomeColor =        config.getInt("grid.config.colorbiome",     Configuration.CATEGORY_CLIENT, 0xff00ff, 0, 0xffffff, "grid.config.tt.colorbiome");
+        blockColor =        config.getRGB("grid.config.colorblock",     Configuration.CATEGORY_CLIENT, 0x8080ff, "grid.config.tt.colorblock");
+        lineColor =         config.getRGB("grid.config.colorline",      Configuration.CATEGORY_CLIENT, 0xff8000, "grid.config.tt.colorline");
+        circleColor =       config.getRGB("grid.config.colorcircle",    Configuration.CATEGORY_CLIENT, 0x00e480, "grid.config.tt.colorcircle");
+        spawnNightColor =   config.getRGB("grid.config.colorspawnnight",Configuration.CATEGORY_CLIENT, 0xffff00, "grid.config.tt.colorspawnnight");
+        spawnDayColor =     config.getRGB("grid.config.colorspawnday",  Configuration.CATEGORY_CLIENT, 0xff0000, "grid.config.tt.colorspawnday");
+        biomeColor =        config.getRGB("grid.config.colorbiome",     Configuration.CATEGORY_CLIENT, 0xff00ff, "grid.config.tt.colorbiome");
         
         useCache = config.getBoolean("grid.config.usecache", Configuration.CATEGORY_CLIENT, true, "grid.config.tt.usecache");
         
