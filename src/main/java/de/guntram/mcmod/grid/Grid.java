@@ -518,7 +518,8 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     
     private void drawLine(VertexConsumer consumer, MatrixStack stack, double x1, double x2, double y1, double y2, double z1, double z2, float red, float green, float blue) {
         if (dump) {
-            System.out.println("line from "+x1+","+y1+","+z1+" to "+x2+","+y2+","+z2);
+            System.out.println("line from "+(x1-cameraX)+","+(y1-cameraY)+","+(z1-cameraZ)+
+                                        " to "+(x2-cameraX)+","+(y2-cameraY)+","+(z2-cameraZ));
         }
         Matrix4f model = stack.peek().getPositionMatrix();
         Matrix3f normal = stack.peek().getNormalMatrix();
@@ -544,7 +545,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         }
     }
     
-    private void drawDiamond(VertexConsumer consumer, MatrixStack stack, int x, int y, int z, float red, float green, float blue) {
+    private void drawDiamond(VertexConsumer consumer, MatrixStack stack, double x, double y, double z, float red, float green, float blue) {
         double x1 = x+0.3f;
         double x2 = x+0.5f;
         double x3 = x+0.7f;
