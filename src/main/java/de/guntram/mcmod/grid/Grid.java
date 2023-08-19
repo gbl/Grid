@@ -2,6 +2,8 @@ package de.guntram.mcmod.grid;
 
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
+import static com.mojang.brigadier.arguments.LongArgumentType.getLong;
+import static com.mojang.brigadier.arguments.LongArgumentType.longArg;
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import de.guntram.mcmod.crowdintranslate.CrowdinTranslate;
@@ -14,6 +16,8 @@ import de.guntram.mcmod.fabrictools.IConfiguration;
 import de.guntram.mcmod.fabrictools.ModConfigurationHandler;
 import de.guntram.mcmod.fabrictools.Types.ConfigurationSelectList;
 import de.guntram.mcmod.fabrictools.VolatileConfiguration;
+
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
@@ -35,10 +39,16 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.random.ChunkRandom;
 import net.minecraft.world.LightType;
+import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.WorldChunk;
@@ -74,6 +84,8 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     private boolean isHexes = false;
     private boolean showSpawns=false;
     private Pattern showBiomes=null;
+    private boolean showSlimes = false;
+    private long slimeSeed = 0;
     private Logger LOGGER;
     
     private float[] blockColor      = colorToRgb(0x8080ff);
@@ -82,6 +94,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     private float[] spawnNightColor = colorToRgb(0xffff00);
     private float[] spawnDayColor   = colorToRgb(0xff0000);
     private float[] biomeColor      = colorToRgb(0xff00ff);
+    private float[] slimeColor      = colorToRgb(0x00ff00);
     
     private static final String modes[] = { "grid.displaymode.rectangle", "grid.displaymode.circle", "grid.displaymode.hex" };
     VolatileConfiguration runtimeSettings;
@@ -95,6 +108,12 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     private Displaycache[][] biomeCache;
     private Displaycache[][] spawnCache;
     int biomeUpdateX, spawnUpdateX;
+
+
+    // This should have been done with stack.translate(camera.?), but the camera coords can easily exceed
+    // good precision values for floats, and the MatrixStack consists of float matrices. So don't use translate,
+    // subtract these values when calling vertex() instead.
+    private double cameraX, cameraY, cameraZ;
     
     class Displaycache {
         byte displaymode;
@@ -136,7 +155,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     
     public void renderOverlay(float partialTicks, MatrixStack stack, VertexConsumer consumer, double cameraX, double cameraY, double cameraZ) {
         
-        if (!showGrid && !showSpawns && showBiomes == null)
+        if (!showGrid && !showSpawns && !showSlimes && showBiomes == null)
             return;
         
         ConfigurationHandler confHandler = ConfigurationHandler.getInstance();
@@ -146,10 +165,15 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         spawnNightColor =   colorToRgb(confHandler.spawnNightColor);
         spawnDayColor =     colorToRgb(confHandler.spawnDayColor);
         biomeColor =        colorToRgb(confHandler.biomeColor);
+        slimeColor =        colorToRgb(confHandler.slimeColor);
 
         Entity player = MinecraftClient.getInstance().getCameraEntity();
         stack.push();
-        stack.translate(-cameraX, -cameraY, -cameraZ);
+        // don't translate, subtract manaully in vertex()
+        // stack.translate(-cameraX, -cameraY, -cameraZ);
+        this.cameraX = cameraX;
+        this.cameraY = cameraY;
+        this.cameraZ = cameraZ;
 
         int playerX=(int) Math.floor(player.getX());
         int playerZ=(int) Math.floor(player.getZ());
@@ -170,8 +194,8 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         }
         
         if (showGrid) {
-            float tempy=((float)(fixY==Y_FOR_FLOAT ? player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks : fixY));
-            final float y;
+            double tempy=((fixY==Y_FOR_FLOAT ? player.lastRenderY + (player.getY() - player.lastRenderY) * (double)partialTicks : fixY));
+            final double y;
             if (player.getY()+player.getEyeHeight(player.getPose()) > tempy) {
                 y=tempy+0.05f;
             } else {
@@ -257,10 +281,10 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
                 } else if (isCircles) {
                     for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
                         for (int z=baseZ-sizeZ; z<=baseZ+sizeZ; z+=gridZ) {
-                            float dx=0;
-                            float dz=gridX/2.0f;
-                            for (float nextx=0.1f; nextx<gridX; nextx+=0.1f) {
-                                float nextz=(float)(Math.sqrt(gridX*gridX/4.0-nextx*nextx));
+                            double dx=0;
+                            double dz=gridX/2.0f;
+                            for (double nextx=0.1f; nextx<gridX; nextx+=0.1f) {
+                                double nextz=(Math.sqrt(gridX*gridX/4.0-nextx*nextx));
                                 drawCircleSegment(consumer, stack, x, dx, nextx, y, z, dz, nextz, circleColor[0], circleColor[1], circleColor[2]);
                                 dx=nextx;
                                 dz=nextz;
@@ -283,6 +307,10 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         
         if (showBiomes!=null) {
             showBiomes(consumer, stack, player, player.getBlockPos().getX(), player.getBlockPos().getZ());
+        }
+
+        if (showSlimes) {
+            showSlimes(consumer, stack, player, player.getBlockPos().getX(), player.getBlockPos().getZ());
         }
 
         stack.pop();
@@ -357,6 +385,43 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
             }
         }
     }
+
+    private void showSlimes(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
+        int miny=(int)(player.getY())-64;
+        int maxy=(int)(player.getY())+2;
+
+        World playerWorld = player.getWorld();
+        if (miny<playerWorld.getBottomY()) { miny=playerWorld.getBottomY(); }
+        if (maxy>playerWorld.getTopY()-1)  { maxy=playerWorld.getTopY()-1; }
+
+        int chunkx = Integer.MAX_VALUE;
+        int chunkz = Integer.MAX_VALUE;
+        boolean isSlimeChunk = false;
+        for (int x=baseX-distance; x<=baseX+distance; x++) {
+            for (int z = baseZ - distance; z <= baseZ + distance; z++) {
+                if (x/16 != chunkx || z/16 != chunkz) {
+                    chunkx = x>>4;
+                    chunkz = z>>4;
+                    isSlimeChunk = ChunkRandom.getSlimeRandom(chunkx, chunkz, slimeSeed, 987234911L).nextInt(10) == 0;
+                    // LOGGER.info("at chunkx {} chunkz {} isslime = {}", chunkx, chunkz, isSlimeChunk);
+                }
+                if (!isSlimeChunk) {
+                    continue;
+                }
+                int y;
+                if (fixY == Y_FOR_FLOAT) {
+                    y = (int) (player.getY());
+                    while (y >= miny && isAir(playerWorld.getBlockState(new BlockPos(x, y, z)).getBlock())) {
+                        y--;
+                    }
+                } else {
+                    y = fixY - 1;
+                }
+                // LOGGER.info("drawing slime diamond at {} {} {}", x, y, z);
+                drawDiamond(consumer, stack, x, y+1, z, slimeColor[0], slimeColor[1], slimeColor[2]);
+            }
+        }
+    }
     
     private void showBiomes(VertexConsumer consumer, MatrixStack stack, Entity player, int baseX, int baseZ) {
         int miny=(int)(player.getY())-16;
@@ -409,7 +474,7 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         return block == Blocks.AIR || block == Blocks.CAVE_AIR || block == Blocks.VOID_AIR;
     }
     
-    private void drawLineGrid(VertexConsumer consumer, MatrixStack stack, int baseX, int baseZ, float y, int sizeX, int sizeZ) {
+    private void drawLineGrid(VertexConsumer consumer, MatrixStack stack, int baseX, int baseZ, double y, int sizeX, int sizeZ) {
         for (int x=baseX-sizeX; x<=baseX+sizeX; x+=gridX) {
             drawLine(consumer, stack, x, x, y, y, baseZ-distance, baseZ+distance, lineColor[0], lineColor[1], lineColor[2]);
         }
@@ -418,29 +483,29 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         }
     }
     
-    private void drawSquare(VertexConsumer consumer, MatrixStack stack, float x, float y, float z, float r, float g, float b) {
+    private void drawSquare(VertexConsumer consumer, MatrixStack stack, double x, double y, double z, float r, float g, float b) {
         drawLine(consumer, stack, x+0.3f, x+0.7f, y, y, z+0.3f, z+0.3f, r, g, b);
         drawLine(consumer, stack, x+0.7f, x+0.7f, y, y, z+0.3f, z+0.7f, r, g, b);
         drawLine(consumer, stack, x+0.7f, x+0.3f, y, y, z+0.7f, z+0.7f, r, g, b);
         drawLine(consumer, stack, x+0.3f, x+0.3f, y, y, z+0.7f, z+0.3f, r, g, b);
     }
     
-    private void drawXTriangleVertex(VertexConsumer consumer, MatrixStack stack, float x, float y, float z, boolean inverted, float r, float g, float b) {
-        float xMult = (inverted ? 1 : -1);
+    private void drawXTriangleVertex(VertexConsumer consumer, MatrixStack stack, double x, double y, double z, boolean inverted, float r, float g, float b) {
+        double xMult = (inverted ? 1 : -1);
         drawLine(consumer, stack, x+0.5f, x+0.5f+ 0.5f*xMult, y, y, z+0.5f, z+0.5f, r, g, b);
         drawLine(consumer, stack, x+0.5f, x+0.5f-0.25f*xMult, y, y, z+0.5f, z+1.0f, r, g, b);
         drawLine(consumer, stack, x+0.5f, x+0.5f-0.25f*xMult, y, y, z+0.5f, z+0.0f, r, g, b);
     }
 
-    private void drawYTriangleVertex(VertexConsumer consumer, MatrixStack stack, float x, float y, float z, boolean inverted, float r, float g, float b) {
-        float xMult = (inverted ? 1 : -1);
+    private void drawYTriangleVertex(VertexConsumer consumer, MatrixStack stack, double x, double y, double z, boolean inverted, float r, float g, float b) {
+        double xMult = (inverted ? 1 : -1);
         drawLine(consumer, stack, x+0.5f, x+0.5f, y, y, z+0.5f, z+0.5f+ 0.5f*xMult, r, g, b);        
         drawLine(consumer, stack, x+0.5f, x+1.0f, y, y, z+0.5f, z+0.5f-0.25f*xMult, r, g, b);
         drawLine(consumer, stack, x+0.5f, x+0.0f, y, y, z+0.5f, z+0.5f-0.25f*xMult, r, g, b);
     }
 
     
-    private void drawCircleSegment(VertexConsumer consumer, MatrixStack stack, float xc, float x1, float x2, float y, float zc, float z1, float z2, float red, float green, float blue) {
+    private void drawCircleSegment(VertexConsumer consumer, MatrixStack stack, double xc, double x1, double x2, double y, double zc, double z1, double z2, float red, float green, float blue) {
         drawLine(consumer, stack, xc+x1+0.5f, xc+x2+0.5f, y, y, zc+z1+0.5f, zc+z2+0.5f, red, green, blue);
         drawLine(consumer, stack, xc-x1+0.5f, xc-x2+0.5f, y, y, zc+z1+0.5f, zc+z2+0.5f, red, green, blue);
         drawLine(consumer, stack, xc+x1+0.5f, xc+x2+0.5f, y, y, zc-z1+0.5f, zc-z2+0.5f, red, green, blue);
@@ -451,28 +516,28 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         drawLine(consumer, stack, xc-z1+0.5f, xc-z2+0.5f, y, y, zc-x1+0.5f, zc-x2+0.5f, red, green, blue);
     }
     
-    private void drawLine(VertexConsumer consumer, MatrixStack stack, float x1, float x2, float y1, float y2, float z1, float z2, float red, float green, float blue) {
+    private void drawLine(VertexConsumer consumer, MatrixStack stack, double x1, double x2, double y1, double y2, double z1, double z2, float red, float green, float blue) {
         if (dump) {
             System.out.println("line from "+x1+","+y1+","+z1+" to "+x2+","+y2+","+z2);
         }
         Matrix4f model = stack.peek().getPositionMatrix();
         Matrix3f normal = stack.peek().getNormalMatrix();
-        
-        float dx = x2 - x1;
-        float dy = y2 - y1;
-        float dz = z2 - z1;
-        float dist = MathHelper.sqrt(dx*dx + dy*dy + dz*dz);
-        if (dist > 0.001) {
-            dx /= dist;
-            dy /= dist;
-            dz /= dist;
+
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double dz = z2 - z1;
+        double dist = MathHelper.inverseSqrt(dx*dx + dy*dy + dz*dz);
+        if (dist < 1000) {
+            dx *= dist;
+            dy *= dist;
+            dz *= dist;
         }
-        
-        consumer.vertex(model, x1, y1, z1).color(red, green, blue, 1.0f).normal(normal, dx, dy, dz).next();
-        consumer.vertex(model, x2, y2, z2).color(red, green, blue, 1.0f).normal(normal, dx, dy, dz).next();
+
+        consumer.vertex(model, (float)(x1-cameraX), (float)(y1-cameraY), (float)(z1-cameraZ)).color(red, green, blue, 1.0f).normal(normal, (float)dx, (float)dy, (float)dz).next();
+        consumer.vertex(model, (float)(x2-cameraX), (float)(y2-cameraY), (float)(z2-cameraZ)).color(red, green, blue, 1.0f).normal(normal, (float)dx, (float)dy, (float)dz).next();
     }
     
-    private void drawCross(VertexConsumer consumer, MatrixStack stack, float x, float y, float z, float red, float green, float blue, boolean twoLegs) {
+    private void drawCross(VertexConsumer consumer, MatrixStack stack, double x, double y, double z, float red, float green, float blue, boolean twoLegs) {
         drawLine(consumer, stack, x+0.3f, x+0.7f, y, y, z+0.3f, z+0.7f, red, green, blue);
         if (twoLegs) {
             drawLine(consumer, stack, x+0.3f, x+0.7f, y, y, z+0.7f, z+0.3f, red, green, blue);
@@ -480,13 +545,13 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
     }
     
     private void drawDiamond(VertexConsumer consumer, MatrixStack stack, int x, int y, int z, float red, float green, float blue) {
-        float x1 = x+0.3f;
-        float x2 = x+0.5f;
-        float x3 = x+0.7f;
-        float z1 = z+0.3f;
-        float z2 = z+0.5f;
-        float z3 = z+0.7f;
-        float y1 = y+0.05f;
+        double x1 = x+0.3f;
+        double x2 = x+0.5f;
+        double x3 = x+0.7f;
+        double z1 = z+0.3f;
+        double z2 = z+0.5f;
+        double z3 = z+0.7f;
+        double y1 = y+0.05f;
         
         drawLine(consumer, stack, x1, x2, y1, y1, z2, z1, red, green, blue);
         drawLine(consumer, stack, x2, x3, y1, y1, z1, z2, red, green, blue);
@@ -612,6 +677,31 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
             sender.sendMessage(Text.literal(I18n.translate("msg.gridcoordspositive")), false);
         }
     }
+
+    private void cmdSlime(ClientPlayerEntity player, boolean show) {
+        if (!show) {
+            cmdSlime(player, show, 0l);
+            return;
+        } else if (MinecraftClient.getInstance().isConnectedToLocalServer()) {
+            IntegratedServer server = MinecraftClient.getInstance().getServer();
+            long seed = server.getWorld(player.getWorld().getRegistryKey()).getSeed();
+            cmdSlime(player, true, seed);
+        } else {
+            player.sendMessage(Text.literal(I18n.translate("msg.gridnoseed")));
+        }
+    }
+
+    private void cmdSlime(ClientPlayerEntity player, boolean show, long seed) {
+        World world = player.getWorld();
+        if (show) {
+            player.sendMessage(Text.literal(I18n.translate("msg.gridslimeon", seed)));
+            showSlimes = true;
+            slimeSeed = seed;
+        } else {
+            player.sendMessage(Text.literal(I18n.translate("msg.gridslimeoff")));
+            showSlimes = false;
+        }
+    }
     
     private void cmdBiome(ClientPlayerEntity sender, String biome) {
         if (biome == null  || biome.isEmpty()) {
@@ -643,6 +733,8 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.showspawn", "", showSpawns, false, null, null, (val) -> showSpawns = (boolean) val));
         runtimeSettings.addItem(new ConfigurationItem("grid.settings.showbiomes", "", (showBiomes != null ? showBiomes.pattern() : ""), "", null, null,
                 (val) -> instance.cmdBiome(MinecraftClient.getInstance().player, (String) val)));
+        runtimeSettings.addItem(new ConfigurationItem("grid.settings.showslimes", "", (showSlimes), false, null, null,
+                (val) -> instance.cmdSlime(MinecraftClient.getInstance().player, (Boolean) val)));
 
         Screen screen = GuiModOptions.getGuiModOptions(null, "Grid Settings", this);
         MinecraftClient.getInstance().setScreen(screen);
@@ -691,6 +783,17 @@ public class Grid implements ClientModInitializer, ModConfigurationHandler
                     .then(
                         literal("hex").executes(c->{
                             instance.cmdHex(MinecraftClient.getInstance().player);
+                            return 1;
+                        })
+                    )
+                    .then(
+                        literal("slime").then(
+                                argument("seed", longArg()).executes(c->{
+                                    instance.cmdSlime(MinecraftClient.getInstance().player, !instance.showSlimes, getLong(c, "seed"));
+                                    return 1;
+                                })
+                        ). executes(c->{
+                            instance.cmdSlime(MinecraftClient.getInstance().player, !instance.showSlimes);
                             return 1;
                         })
                     )

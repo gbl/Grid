@@ -17,7 +17,7 @@ public class ConfigurationHandler implements ModConfigurationHandler {
             instance=new ConfigurationHandler();
         return instance;
     }
-    int blockColor, lineColor, circleColor, spawnNightColor, spawnDayColor, biomeColor;
+    int blockColor, lineColor, circleColor, spawnNightColor, spawnDayColor, biomeColor, slimeColor;
     boolean useCache;
 
     public void load(final File configFile) {
@@ -45,6 +45,7 @@ public class ConfigurationHandler implements ModConfigurationHandler {
             case "grid.config.colorspawnnight" : spawnNightColor    = (int) event.getNewValue(); break;
             case "grid.config.colorspawnday"   : spawnDayColor      = (int) event.getNewValue(); break;
             case "grid.config.colorbiome"      : biomeColor         = (int) event.getNewValue(); break;
+            case "grid.config.colorslime"      : slimeColor         = (int) event.getNewValue(); break;
         }
     }
     
@@ -64,6 +65,7 @@ public class ConfigurationHandler implements ModConfigurationHandler {
         spawnNightColor =   config.getRGB("grid.config.colorspawnnight",Configuration.CATEGORY_CLIENT, 0xffff00, "grid.config.tt.colorspawnnight");
         spawnDayColor =     config.getRGB("grid.config.colorspawnday",  Configuration.CATEGORY_CLIENT, 0xff0000, "grid.config.tt.colorspawnday");
         biomeColor =        config.getRGB("grid.config.colorbiome",     Configuration.CATEGORY_CLIENT, 0xff00ff, "grid.config.tt.colorbiome");
+        slimeColor =        config.getRGB("grid.config.colorslime",     Configuration.CATEGORY_CLIENT, 0x00ff00, "grid.config.tt.colorslime");
         
         useCache = config.getBoolean("grid.config.usecache", Configuration.CATEGORY_CLIENT, true, "grid.config.tt.usecache");
         
